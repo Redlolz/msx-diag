@@ -1,0 +1,143 @@
+	; PPI Addresses
+PPI_PSLT:	EQU	0xa8
+PPI_KEYROW:	EQU	0xa9
+PPI_KEYCOL_CAS:	EQU	0xaa
+PPI_CMD:	EQU	0xab
+
+KEYMAP_INTER:
+	db	'0'
+	db	'1'
+	db	'2'
+	db	'3'
+	db	'4'
+	db	'5'
+	db	'6'
+	db	'7'
+	db	'8'
+	db	'9'
+	db	'-'
+	db	'='
+	db	'\'
+	db	'['
+	db	']'
+	db	';'
+	db	"'"
+	db	'`'
+	db	','
+	db	'.'
+	db	'/'
+	db	0xff		; Dead
+	db	'a'
+	db	'b'
+	db	'c'
+	db	'd'
+	db	'e'
+	db	'f'
+	db	'g'
+	db	'h'
+	db	'I'
+	db	'j'
+	db	'k'
+	db	'l'
+	db	'm'
+	db	'n'
+	db	'o'
+	db	'p'
+	db	'q'
+	db	'r'
+	db	's'
+	db	't'
+	db	'u'
+	db	'v'
+	db	'w'
+	db	'x'
+	db	'y'
+	db	'z'
+	db	0xff		; Shift Key
+	db	0xff		; Ctrl Key
+	db	0xff		; Graph Key
+	db	0xff		; Caps Key
+	db	0xff		; Code Key
+	db	0xff		; F1
+	db	0xff		; F2
+	db	0xff		; F3
+	db	0xff		; F4
+	db	0xff		; F5
+	db	0x1b		; ESC
+	db	0x09		; Tab
+	db	0x03		; STOP (ETX)
+	db	0x08		; Backspace
+	db	0xff		; SELECT
+	db	0x09		; Return (LF)
+	db	' '		; Space
+	db	'*'		; Num *
+	db	'+'		; Num +
+	db	'/'		; Num /
+	db	'0'		; Num 0
+	db	'1'		; Num 1
+	db	'2'		; Num 2
+	db	'3'		; Num 3
+	db	'4'		; Num 4
+	db	'5'		; Num 5
+	db	'6'		; Num 6
+	db	'7'		; Num 7
+	db	'8'		; Num 8
+	db	'9'		; Num 9
+	db	'-'		; Num -
+	db	','		; Num ,
+	db	'.'		; Num .
+
+	; Scans keyboard for keypress
+	; OUTPUT
+	;     A = ASCII code of key
+PPISCANKEY:
+	push	bc
+	push	hl
+
+	ld	b, %00001010
+	in	a, (PPI_KEYCOL_CAS)
+	and	%11110000
+	ld	c, a
+
+PPISCANKEYLOOP:
+	ld	a, b
+	or	c
+	out	(PPI_KEYCOL_CAS), a
+	in	a, (PPI_KEYROW)
+	cp	0xff
+	jp	nz, PPISCANKEYLOOPEND
+	dec	b
+	jp	m, PPISCANKEYEND
+	jp	PPISCANKEYLOOP
+PPISCANKEYLOOPEND:
+	cpl
+	ld	c, a
+	ld	h, 0x7
+
+PPISCANKEYNUMLOOP:
+	ld	a, c
+	and	%00000001
+	jp	nz, PPISCANKEYNUMLOOPEND
+	rr	c
+	dec	h
+	jp	nz, PPISCANKEYNUMLOOP
+PPISCANKEYNUMLOOPEND:
+	ld	a, 0x7
+	sub	a, h
+
+	rl	b
+	rl	b
+	rl	b
+	or	b
+
+	ld	hl, KEYMAP_INTER
+	ld	b, 0x00
+	ld	c, a
+	add	hl, bc
+
+	ld	a, (hl)
+
+PPISCANKEYEND:
+	pop	hl
+	pop	bc
+	ret

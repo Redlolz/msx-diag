@@ -1,0 +1,389 @@
+	jp	test_ram
+
+str_ramtest:
+	defm	"TINY RAM TEST",0x00
+str_slotfound:
+	defm	"RAM IN SLOT: ",0x00
+str_slotnotfound:
+	defm	"NO RAM FOUND",0x00
+str_success:
+	defm	"SUCCESS!",0x00
+str_failed:
+	defm	"FAILED!",0x00
+
+test_ram:
+	; Init VDP to Text Mode
+	; VDP Register 0
+	ld	a, %00000000
+	out	(VDP_REG), a
+	ld	a, 0 | 0x80
+	out	(VDP_REG), a
+
+	; VDP Register 1
+	ld	a, %11010000
+	out	(VDP_REG), a
+	ld	a, 1 | 0x80
+	out	(VDP_REG), a
+
+	; VDP Register 2
+	ld	a, %00000010
+	out	(VDP_REG), a
+	ld	a, 2 | 0x80
+	out	(VDP_REG), a
+
+	; VDP Register 4
+	ld	a, %00000000
+	out	(VDP_REG), a
+	ld	a, 4 | 0x80
+	out	(VDP_REG), a
+
+	; VDP Register 7
+	ld	a, VDP_COL_WHITE << 4 | VDP_COL_BLACK
+	out	(VDP_REG), a
+	ld	a, 7 | 0x80
+	out	(VDP_REG), a
+
+	
+	; Copy font to VRAM
+	ld	a, 0x00		; Lower eight bits of address
+	out	(VDP_VRAM_ADDR), a
+	ld	a, 0x00 | 0x40	; Upper eight bits of address
+	out	(VDP_VRAM_ADDR), a
+
+	ld	de, font	; Index
+	ld	hl, font_end	; Size
+fntcpyloop:
+	ld	a, (de)		; Data
+	out	(VDP_VRAM_DATA), a
+	inc	de
+	ld	a,h		; Compare HL to DE for loop
+	cp	d
+	jp	nz, fntcpyloop
+	ld	a,l
+	cp	e
+	jp	nz, fntcpyloop
+
+
+	; Write "RAMTEST" to screen
+	ld	a, 0x00
+	out	(VDP_VRAM_ADDR), a
+	ld	a, 0x08 | 0x40
+	out	(VDP_VRAM_ADDR), a
+
+	ld	hl, str_ramtest	; Load address of string into HL
+strloop:
+	ld	a, (hl)
+	cp	0x00
+	out	(VDP_VRAM_DATA), a
+	inc	hl
+	jp	nz, strloop
+
+
+	; Find RAM slot
+	ld	a, 0x00
+	ld	b, 0x00		; Current primary slot/secondary slot
+	ld	c, 0x00		; Amount of faults of B
+	ld	d, 0x00		; Best primary slot/secondary slot
+	ld	e, 0xff		; Amount of faults of D
+	ld	ix, 0xe000	; Address to write to
+testslt:
+	ld	a, b		; Get primary slot
+	rl	a
+	rl	a
+	rl	a
+	rl	a
+	and	%11000000	; Correct the format
+	out	(PPI_PSLT), a	; Set primary slot
+
+	ld	a, b		; Get secondary slot
+	rl	a
+	rl	a
+	rl	a
+	rl	a
+	rl	a
+	rl	a
+	and	%11000000	; Correct the format
+	ld	(SSLT), a	; Set secondary slot
+
+	ld	(ix+0), 0x00	; Store a byte in (IX+0)
+	ld	a, 0xff
+	ld	a, (ix+0)	; Retrieve the same byte
+
+	xor	0x00		; Compare byte
+	ld	l, a
+
+	ld	(ix+0), 0xff	; Store a byte in (IX+0)
+	ld	a, 0x00
+	ld	a, (ix+0)	; Retrieve the same byte
+
+	xor	0xff		; Compare byte
+	or	l		; Add faults together
+	ld	l, a
+
+	ld	h, 0x8
+testslt_byteloop:		; Loop through byte and check for errors
+	ld	a, l
+	and	0x1
+	cp	0x0		; Jump if not 0
+	jp	z, testslt_byteloop_end
+	inc	c		; Increase faults by one
+testslt_byteloop_end:
+	rr	l
+	dec	h
+	jp	nz, testslt_byteloop
+
+	; Compare current to best
+	ld	a, c
+	cp	e
+	jp	nc, testslt_next_slot
+	ld	d, b
+	ld	e, c
+
+testslt_next_slot:
+	inc	b		; Increase current primary/secondary slot
+	ld	c, 0x00		; Reset fault counter
+	ld	a, b
+	cp	0x10
+	jp	nz, testslt
+
+
+	; slot is in D
+foundslt:
+	ld	a, 0x28
+	out	(VDP_VRAM_ADDR), a
+	ld	a, 0x08 | 0x40
+	out	(VDP_VRAM_ADDR), a
+
+	ld	hl, str_slotfound	; Load address of string into HL
+foundsltstrloop:
+	ld	a, (hl)
+	cp	0x00
+	out	(VDP_VRAM_DATA), a
+	inc	hl
+	jp	nz, foundsltstrloop
+
+	ld	a, d
+	rr	a
+	rr	a
+	and	%11
+	add	a, 0x30
+	out	(VDP_VRAM_DATA), a
+
+	; Set primary slot
+	ld	a, d
+	rl	a
+	rl	a
+	rl	a
+	rl	a
+	and	%11000000
+	out	(PPI_PSLT), a
+
+	; Set secondary slot
+	ld	a, d
+	rl	a
+	rl	a
+	rl	a
+	rl	a
+	rl	a
+	rl	a
+	and	%11000000
+	ld	(SSLT), a
+
+	; Test upper 8KB of RAM
+	ld	hl, 0x8000
+	ld	de, 0xfffe
+	ld	a, 0x00
+ramtest0write:
+	ld	(hl), 0xff
+
+	inc	hl
+	ld	a, d
+	cp	h
+	jp	nz, ramtest0write
+	ld	a, e
+	cp	l
+	jp	nz, ramtest0write
+
+ramtest0read:
+	ld	hl, 0xe000
+ramtest0readloop:
+	ld	a, (hl)
+	cp	0xff
+	jp	nz, ramtestfailed
+
+	inc	hl
+	ld	a, d
+	cp	h
+	jp	nz, ramtest0readloop
+	ld	a, e
+	cp	l
+	jp	nz, ramtest0readloop
+
+
+
+	; Test upper 8KB of RAM
+	ld	hl, 0x8000
+	ld	de, 0xfffe
+	ld	a, 0x00
+ramtest1write:
+	ld	(hl), 0x00
+
+	inc	hl
+	ld	a, d
+	cp	h
+	jp	nz, ramtest1write
+	ld	a, e
+	cp	l
+	jp	nz, ramtest1write
+
+ramtest1read:
+	ld	hl, 0xe000
+ramtest1readloop:
+	ld	a, (hl)
+	cp	0x00
+	jp	nz, ramtestfailed
+
+	inc	hl
+	ld	a, d
+	cp	h
+	jp	nz, ramtest1readloop
+	ld	a, e
+	cp	l
+	jp	nz, ramtest1readloop
+
+
+ramtestsuccess:
+	ld	c, 0x01
+	; Write "SUCCESS" to screen
+	ld	a, 0x50
+	out	(VDP_VRAM_ADDR), a
+	ld	a, 0x08 | 0x40
+	out	(VDP_VRAM_ADDR), a
+
+	ld	hl, str_success	; Load address of string into HL
+successstrloop:
+	ld	a, (hl)
+	cp	0x00
+	out	(VDP_VRAM_DATA), a
+	inc	hl
+	jp	nz, successstrloop
+
+	jp printbadaddress
+
+ramtestfailed:
+	ld	c, 0x00
+	; Write "FAILED" to screen
+	ld	a, 0x50
+	out	(VDP_VRAM_ADDR), a
+	ld	a, 0x08 | 0x40
+	out	(VDP_VRAM_ADDR), a
+
+	ld	d, h
+	ld	e, l
+	ld	hl, str_failed	; Load address of string into HL
+failedstrloop:
+	ld	a, (hl)
+	cp	0x00
+	out	(VDP_VRAM_DATA), a
+	inc	hl
+	jp	nz, failedstrloop
+
+printbadaddress:
+	ld	a, 0x78
+	out	(VDP_VRAM_ADDR), a
+	ld	a, 0x08 | 0x40
+	out	(VDP_VRAM_ADDR), a
+
+	ld	a, '0'
+	out	(VDP_VRAM_DATA), a
+	ld	a, 'x'
+	out	(VDP_VRAM_DATA), a
+
+outputnibble0:
+	ld	a, d
+	rr	a
+	rr	a
+	rr	a
+	rr	a
+	and	%00001111
+	ld	b, a
+	ld	a, 0x9
+	cp	b
+	ld	a, b
+	jp	c, hexletter0
+
+	add	a, 0x30
+	out	(VDP_VRAM_DATA), a
+	jp	outputnibble1
+
+hexletter0:
+	add	a, 0x37
+	out	(VDP_VRAM_DATA), a
+
+outputnibble1:
+	ld	a, d
+	and	%00001111
+	ld	b, a
+	ld	a, 0x9
+	cp	b
+	ld	a, b
+	jp	c, hexletter1
+
+	add	a, 0x30
+	out	(VDP_VRAM_DATA), a
+	jp	outputnibble2
+
+hexletter1:
+	add	a, 0x37
+	out	(VDP_VRAM_DATA), a
+
+
+outputnibble2:
+	ld	a, e
+	rr	a
+	rr	a
+	rr	a
+	rr	a
+	and	%00001111
+	ld	b, a
+	ld	a, 0x9
+	cp	b
+	ld	a, b
+	jp	c, hexletter2
+
+	add	a, 0x30
+	out	(VDP_VRAM_DATA), a
+	jp	outputnibble3
+
+hexletter2:
+	add	a, 0x37
+	out	(VDP_VRAM_DATA), a
+
+
+outputnibble3:
+	ld	a, e
+	and	%00001111
+	ld	b, a
+	ld	a, 0x9
+	cp	b
+	ld	a, b
+	jp	c, hexletter3
+
+	add	a, 0x30
+	out	(VDP_VRAM_DATA), a
+	jp	test_ram_check_if_failed
+
+hexletter3:
+	add	a, 0x37
+	out	(VDP_VRAM_DATA), a
+
+test_ram_check_if_failed:
+	ld	a, 0x01
+	cp	c
+	jp	z, test_ram_end
+
+test_ram_end_failed:
+	jp	test_ram_end_failed
+
+test_ram_end:
+	nop

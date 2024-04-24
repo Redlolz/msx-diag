@@ -1,0 +1,289 @@
+	; Init vdp
+	; VDP Register 0
+	ld	a, %00000000
+	out	(VDP_REG), a
+	ld	a, %10000000
+	out	(VDP_REG), a
+
+	; VDP Register 1
+	ld	a, %11010000
+	out	(VDP_REG), a
+	ld	a, %10000001
+	out	(VDP_REG), a
+
+	; Set colours
+	ld	a, VDP_COL_DBLUE
+	out	(VDP_REG), a
+	ld	a, %10000111
+	out	(VDP_REG), a
+
+	; RAM TEST 0xFF
+	; Write 0xff to VRAM
+	; Lower eight bits of address
+	ld	a, 0x00
+	out	(VDP_VRAM_ADDR), a
+	; Upper eight bits of address
+	ld	a, 0x00 | 0x40
+	out	(VDP_VRAM_ADDR), a
+
+	ld	de, 0x0000	; Index
+	ld	hl, 0x4000	; Size (16K)
+vramtest0write:
+	ld	a, 0xff		; Data
+	out	(VDP_VRAM_DATA), a
+	inc	de
+	ld	a,h		; Compare HL to DE for loop
+	cp	d
+	jp	nz, vramtest0write
+	ld	a,l
+	cp	e
+	jp	nz, vramtest0write
+
+	; Read and compare VRAM
+	; Lower eight bits of address
+	ld	a, 0x00
+	out	(VDP_VRAM_ADDR), a
+	; Upper eight bits of address
+	ld	a, 0x00
+	out	(VDP_VRAM_ADDR), a
+
+	ld	de, 0x0000	; Index
+	ld	hl, 0x4000	; Size (16K)
+vramtest0read:
+	in	a, (VDP_VRAM_DATA)
+	ld	b, a
+	ld	a, 0xff		; Data
+	cp	b		; Check if correct
+	jp	nz, incorrect	; Jump if not
+	inc	de
+	ld	a,h		; Compare HL to DE for loop
+	cp	d
+	jp	nz, vramtest0read
+	ld	a,l
+	cp	e
+	jp	nz, vramtest0read
+
+
+	; RAM TEST 0xAA
+	; Write 0xaa to VRAM
+	; Lower eight bits of address
+	ld	a, 0x00
+	out	(VDP_VRAM_ADDR), a
+	; Upper eight bits of address
+	ld	a, 0x00 | 0x40
+	out	(VDP_VRAM_ADDR), a
+
+	ld	de, 0x0000	; Index
+	ld	hl, 0x4000	; Size (16K)
+vramtest1write:
+	ld	a, 0xaa		; Data
+	out	(VDP_VRAM_DATA), a
+	inc	de
+	ld	a,h		; Compare HL to DE for loop
+	cp	d
+	jp	nz, vramtest1write
+	ld	a,l
+	cp	e
+	jp	nz, vramtest1write
+
+	; Read and compare VRAM
+	; Lower eight bits of address
+	ld	a, 0x00
+	out	(VDP_VRAM_ADDR), a
+	; Upper eight bits of address
+	ld	a, 0x00
+	out	(VDP_VRAM_ADDR), a
+
+	ld	de, 0x0000	; Index
+	ld	hl, 0x4000	; Size (16K)
+vramtest1read:
+	in	a, (VDP_VRAM_DATA)
+	ld	b, a
+	ld	a, 0xaa		; Data
+	cp	b		; Check if correct
+	jp	nz, incorrect	; Jump if not
+	inc	de
+	ld	a,h		; Compare HL to DE for loop
+	cp	d
+	jp	nz, vramtest1read
+	ld	a,l
+	cp	e
+	jp	nz, vramtest1read
+
+
+	; RAM TEST 0x55
+	; Write 0x55 to VRAM
+	; Lower eight bits of address
+	ld	a, 0x00
+	out	(VDP_VRAM_ADDR), a
+	; Upper eight bits of address
+	ld	a, 0x00 | 0x40
+	out	(VDP_VRAM_ADDR), a
+
+	ld	de, 0x0000	; Index
+	ld	hl, 0x4000	; Size (16K)
+vramtest2write:
+	ld	a, 0x55		; Data
+	out	(VDP_VRAM_DATA), a
+	inc	de
+	ld	a,h		; Compare HL to DE for loop
+	cp	d
+	jp	nz, vramtest2write
+	ld	a,l
+	cp	e
+	jp	nz, vramtest2write
+
+	; Read and compare VRAM
+	; Lower eight bits of address
+	ld	a, 0x00
+	out	(VDP_VRAM_ADDR), a
+	; Upper eight bits of address
+	ld	a, 0x00
+	out	(VDP_VRAM_ADDR), a
+
+	ld	de, 0x0000	; Index
+	ld	hl, 0x4000	; Size (16K)
+vramtest2read:
+	in	a, (VDP_VRAM_DATA)
+	ld	b, a
+	ld	a, 0x55		; Data
+	cp	b		; Check if correct
+	jp	nz, incorrect	; Jump if not
+	inc	de
+	ld	a,h		; Compare HL to DE for loop
+	cp	d
+	jp	nz, vramtest2read
+	ld	a,l
+	cp	e
+	jp	nz, vramtest2read
+
+
+	; RAM TEST 0x00
+	; Write 0x00 to VRAM
+	ld	a, 0x00		; Lower eight bits of address
+	out	(VDP_VRAM_ADDR), a
+	ld	a, 0x00 | 0x40	; Upper eight bits of address
+	out	(VDP_VRAM_ADDR), a
+
+	ld	de, 0x0000	; Index
+	ld	hl, 0x4000	; Size (16K)
+vramtest3write:
+	ld	a, 0x00		; Data
+	out	(VDP_VRAM_DATA), a
+	inc	de
+	ld	a,h		; Compare HL to DE for loop
+	cp	d
+	jp	nz, vramtest3write
+	ld	a,l
+	cp	e
+	jp	nz, vramtest3write
+
+	; Read and compare VRAM
+	; Lower eight bits of address
+	ld	a, 0x00
+	out	(VDP_VRAM_ADDR), a
+	; Upper eight bits of address
+	ld	a, 0x00
+	out	(VDP_VRAM_ADDR), a
+
+	ld	de, 0x0000	; Index
+	ld	hl, 0x4000	; Size (16K)
+vramtest3read:
+	in	a, (VDP_VRAM_DATA)
+	ld	b, a
+	ld	a, 0x00		; Data
+	cp	b		; Check if correct
+	jp	nz, incorrect	; Jump if not
+	inc	de
+	ld	a,h		; Compare HL to DE for loop
+	cp	d
+	jp	nz, vramtest3read
+	ld	a,l
+	cp	e
+	jp	nz, vramtest3read
+
+	jp	correct
+
+
+incorrect:
+	xor	b
+	ld	b, a		; Store map of faulty bits in B
+
+	ld	a, VDP_COL_MAGENTA
+	out	(VDP_REG), a
+	ld	a, 0x07 | %10000000
+	out	(VDP_REG), a
+
+incorrect_begin:
+	; Give some time to the user to pay attention
+	ld	d, 0xa
+waitloop1outer:
+	ld	hl, 0xffff
+waitloop1inner:
+	dec	hl
+	ld	a,h
+	cp	0x00
+	jp	nz, waitloop1inner
+	ld	a,l
+	cp	0x00
+	jp	nz, waitloop1inner
+	dec	d
+	jp	nz, waitloop1outer
+
+	ld	d, 0x8
+	ld	c,b		; Get faulty bits
+incorrect_loop:
+	ld	a,c		; Load into A
+	and	0x1		; Leave only first bit
+	cp	0x1		; Check if faulty
+	jp	nz, incorrect_loop_good
+	
+	; Display red to indicate bit as faulty
+	ld	a, VDP_COL_MRED
+	out	(VDP_REG), a
+	ld	a, 0x07 | %10000000
+	out	(VDP_REG), a
+	jp	incorrect_loop_timeout
+
+incorrect_loop_good:
+	; Display green to indicate bit as good
+	ld	a, VDP_COL_MGREEN
+	out	(VDP_REG), a
+	ld	a, 0x07 | %10000000
+	out	(VDP_REG), a
+
+incorrect_loop_timeout:
+	ld	hl, 0xffff
+incorrect_loop_wait1:
+	dec	hl
+	ld	a,h
+	cp	0x00
+	jp	nz, incorrect_loop_wait1
+	ld	a,l
+	cp	0x00
+	jp	nz, incorrect_loop_wait1
+
+	; Display black
+	ld	a, VDP_COL_BLACK
+	out	(VDP_REG), a
+	ld	a, 0x07 | %10000000
+	out	(VDP_REG), a
+
+	ld	hl, 0xffff
+incorrect_loop_wait2:
+	dec	hl
+	ld	a,h
+	cp	0x00
+	jp	nz, incorrect_loop_wait2
+	ld	a,l
+	cp	0x00
+	jp	nz, incorrect_loop_wait2
+
+	rr	c
+	dec	d
+	jp	nz, incorrect_loop
+	jp	incorrect_begin
+
+
+correct:
+	nop

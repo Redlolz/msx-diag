@@ -1,0 +1,6 @@
+*.lst
+*.rom
+*.sym
+*.bin
+*.ase
+docs/

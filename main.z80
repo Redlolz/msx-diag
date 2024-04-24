@@ -1,0 +1,32 @@
+	org	0x0000
+	jp	init
+
+	; Variables
+	; IO Mapped addresses
+SSLT:	EQU	0xffff
+
+	; Load syscalls
+	include	"mem.z80"
+	include	"ppi.z80"
+	include	"vdp.z80"
+
+	; Load binaries
+font:		incbin	"font.bin"
+font_end:	db	0
+
+init:	
+	; Setup PPI
+	ld	a, %10000010
+	out	(PPI_CMD), a
+
+	ld	a, %11110000
+	out	(PPI_KEYCOL_CAS), a
+
+	include	"test_vram.z80"
+	include	"test_ram.z80"
+
+	ld	sp, 0xfffe
+
+	include "menu.z80"
+
+	ds 0x8000 - $, 0xff

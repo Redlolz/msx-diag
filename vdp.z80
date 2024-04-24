@@ -1,0 +1,167 @@
+VDP_VRAM_DATA:		EQU	0x98
+VDP_VRAM_ADDR:		EQU	0x99
+VDP_REG:		EQU	0x99
+
+VDP_COL_TRANS:		EQU	0x00
+VDP_COL_BLACK:		EQU	0x01
+VDP_COL_MGREEN:		EQU	0x02
+VDP_COL_LGREEN:		EQU	0x03
+VDP_COL_DBLUE:		EQU	0x04
+VDP_COL_LBLUE:		EQU	0x05
+VDP_COL_DRED:		EQU	0x06
+VDP_COL_CYAN:		EQU	0x07
+VDP_COL_MRED:		EQU	0x08
+VDP_COL_LRED:		EQU	0x09
+VDP_COL_DYELLOW:	EQU	0x0a
+VDP_COL_LYELLOW:	EQU	0x0b
+VDP_COL_DGREEN:		EQU	0x0c
+VDP_COL_MAGENTA:	EQU	0x0d
+VDP_COL_GRAY:		EQU	0x0e
+VDP_COL_WHITE:		EQU	0x0f
+
+	; Changes DE to contain an index to the name table
+	; INPUT
+	;     D = X screen coordinate
+	;     E = Y screen coordinate
+	; OUTPUT
+	;     DE = Name table position
+VDPSETPOS:
+	push	af
+	push	hl
+	push	bc
+
+	ld	bc, 0x0028
+	ld	hl, 0x0000
+	ld	a, 0x00
+VDPSETPOSLOOP:
+	cp	e
+	jp	z, VDPSETPOSLOOPEND
+	add	hl, bc
+	dec	e
+	jp	VDPSETPOSLOOP
+
+VDPSETPOSLOOPEND:
+	ld	c, d
+	add	hl, bc
+
+	ld	d, h
+	ld	e, l
+
+	pop	bc
+	pop	hl
+	pop	af
+	ret
+
+
+
+	; Changes foreground color to value in A
+	; INPUT
+	;     A = Foreground Color
+VDPSETFG:
+	push	bc
+	ld	b, a
+
+	ld	a, VDP_COL_WHITE << 4 | VDP_COL_BLACK
+	out	(VDP_REG), a
+	ld	a, 7 | 0x80
+	out	(VDP_REG), a
+
+	pop	bc
+	ret
+
+
+
+	; Changes background color to value in A
+	; INPUT
+	;     A = Background Color
+VDPSETBG:
+	ret
+	
+
+
+	; Fills VRAM with specified byte
+	; INPUT
+	;     A  = Specified byte
+	;     DE = Length
+	;     HL = Address
+VDPFILLVRAM:
+	push	af
+	push	bc
+	push	de
+
+	ld	b, a
+
+	; Lower eight bits of address
+	ld	a, l
+	out	(VDP_VRAM_ADDR), a
+	; Upper eight bits of address
+	ld	a, h
+	or	0x40		; Enable write bit
+	out	(VDP_VRAM_ADDR), a
+
+VDPFILLVRAMLOOP:
+	ld	a, b
+	out	(VDP_VRAM_DATA), a
+	dec	de
+	ld	a, d
+	or	e
+	jp	nz, VDPFILLVRAMLOOP
+	
+	pop	de
+	pop	bc
+	pop	af
+	ret
+
+
+
+	; Write a single character to the screen
+	; INPUT
+	;     A  = ASCII Character
+	;     DE = Name table position
+	; OUTPUT
+	;     DE = New name table position
+	; MODIFIES DE
+VDPPUTCHAR:
+	push	af
+
+	ld	a, e
+	out	(VDP_VRAM_ADDR), a
+	ld	a, d
+	add	a, 0x48		; Add offset to name table and bit 7 for write
+	out	(VDP_VRAM_ADDR), a
+
+	pop	af
+	out	(VDP_VRAM_DATA), a
+	inc	de
+
+	ret
+
+
+
+	; Write null-terminated string to screen
+	; INPUT
+	;     DE = Name table position
+	;     HL = Address of string
+	; OUTPUT
+	;     DE = New name table position
+	; MODIFIES DE
+VDPWRSTR:
+	push	af
+	push	hl
+	
+	ld	a, e
+	out	(VDP_VRAM_ADDR), a
+	ld	a, d
+	add	a, 0x48		; Add offset to name table and bit 7 for write
+	out	(VDP_VRAM_ADDR), a
+VDPWRSTRLOOP:
+	ld	a, (hl)
+	cp	0x00
+	out	(VDP_VRAM_DATA), a
+	inc	hl
+	inc	de
+	jp	nz, VDPWRSTRLOOP
+
+	pop	hl
+	pop	af
+	ret
