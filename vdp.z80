@@ -114,6 +114,24 @@ VDPFILLVRAMLOOP:
 
 
 
+	; (Text Mode) Clears the screen
+VDPTXTCLRSCREEN:
+	push	af
+	push	de
+	push	hl
+
+	ld	a, 0x00
+	ld	de, 0x03c0
+	ld	hl, 0x4800
+	call	VDPFILLVRAM
+
+	pop	hl
+	pop	de
+	pop	af
+	ret
+
+
+
 	; Write a single character to the screen
 	; INPUT
 	;     A  = ASCII Character

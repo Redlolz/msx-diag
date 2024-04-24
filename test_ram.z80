@@ -45,9 +45,9 @@ test_ram:
 
 	
 	; Copy font to VRAM
-	ld	a, 0x00		; Lower eight bits of address
+	ld	a, 0x08		; Lower eight bits of address
 	out	(VDP_VRAM_ADDR), a
-	ld	a, 0x00 | 0x40	; Upper eight bits of address
+	ld	a, 0x01 | 0x40	; Upper eight bits of address
 	out	(VDP_VRAM_ADDR), a
 
 	ld	de, font	; Index

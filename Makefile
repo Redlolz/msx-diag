@@ -16,4 +16,4 @@ flash: msxdiag.rom
 	minipro -p "W27E257@DIP28" -w $<
 
 clean:
-	$(RM) *.rom *.sym
+	$(RM) *.bin *.rom *.sym

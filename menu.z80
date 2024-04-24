@@ -9,6 +9,9 @@ str_menu_slot_check:
 str_menu_keyboard_test:
 	defm	"[2] Keyboard Tester (WIP)", 0x00
 
+str_return_to_main_menu:
+	defm	"[PRESS ANY KEY TO RETURN TO MAIN MENU]", 0x00
+
 str_frt_title_bar:
 	defm	"=== RAM TEST ===", 0x00
 str_frt_success:
@@ -25,24 +28,9 @@ str_frt_page_3:
 	defm	"Page 3: ", 0x00
 
 
-CLEARSCREEN:
-	push	af
-	push	de
-	push	hl
-
-	ld	a, 0x00
-	ld	de, 0x03c0
-	ld	hl, 0x4800
-	call	VDPFILLVRAM
-
-	pop	hl
-	pop	de
-	pop	af
-	ret
-
 main_menu:
 	; Clear the screen
-	call	CLEARSCREEN
+	call	VDPTXTCLRSCREEN
 
 	; Write some strings to the screen
 	ld	de, 0x0c00
@@ -74,7 +62,7 @@ main_menu_keyloop:
 	jp	main_menu_keyloop
 	
 full_ram_test:
-	call	CLEARSCREEN
+	call	VDPTXTCLRSCREEN
 
 	ld	de, 0x0c00
 	call	VDPSETPOS
@@ -286,14 +274,25 @@ full_ram_test_page_0_failed:
 	call	VDPSETPOS
 	ld	hl, str_frt_failed
 	call	VDPWRSTR
-	jp	full_ram_test_pre_page_0
+	jp	full_ram_test_end
 full_ram_test_page_0_success:
 	ld	de, 0x0802
 	call	VDPSETPOS
 	ld	hl, str_frt_success
 	call	VDPWRSTR
-	jp	full_ram_test_pre_page_0
+	jp	full_ram_test_end
 
 
 full_ram_test_end:
-	jp	full_ram_test_end
+	ld	de, 0x0116
+	call	VDPSETPOS
+	ld	hl, str_return_to_main_menu
+	call	VDPWRSTR
+
+full_ram_test_keyloop:
+	call	PPISCANKEY
+
+	cp	0xff
+	jp	nz, main_menu
+	
+	jp	full_ram_test_keyloop
