@@ -5,7 +5,6 @@
 	;     B  = Byte To Write
 	; OUPUT
 	;     DE = Amount of faults
-	;     HL = Last address
 RAMTEST:
 	push	hl
 	push	ix
@@ -23,6 +22,9 @@ RAMTESTWRITE:
 	pop	ix
 	pop	hl
 
+	push	hl
+	push	ix
+
 RAMTESTREAD:
 	ld	a, (ix+0)
 	cp	b
@@ -35,8 +37,7 @@ RAMTESTREADCONT:
 	or	l
 	jr	nz, RAMTESTREAD
 
-	dec	ix
-	push	ix
+	pop	ix
 	pop	hl
 
 	ret

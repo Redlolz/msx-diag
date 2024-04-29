@@ -14,7 +14,7 @@ SSLT:	EQU	0xffff
 font:		incbin	"font.bin"
 font_end:	db	0
 
-init:	
+init:
 	; Setup PPI
 	ld	a, %10000010
 	out	(PPI_CMD), a
@@ -22,10 +22,10 @@ init:
 	ld	a, %11110000
 	out	(PPI_KEYCOL_CAS), a
 
-	include	"test_vram.z80"
-	include	"test_ram.z80"
+	include	"init_test_vram.z80"
+	include	"init_test_ram.z80"
 
-	ld	sp, 0xfffe
+	ld	sp, 0xffef
 
 	include "menu.z80"
 

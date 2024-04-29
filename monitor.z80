@@ -1,0 +1,588 @@
+	jp	monitor_init
+
+mon_buff:	equ	0xf000
+mon_buffsize:	equ	0xf100	; Make sure this ends in 00
+mon_jumppad:	equ	0xf110
+mon_screenbuff:	equ	0xf200
+
+str_mon_title:
+	defm	"MONITOR (enter 'h' for help)",0x00
+
+str_mon_error:
+	defm	"?", 0x00
+
+str_mon_help0:
+	defm	"COMMANDS:", 0x00
+
+str_mon_help1:
+	defm	"r xxxx,nn - Read from memory", 0x00
+
+str_mon_help2:
+	defm	"w xxxx,*  - Write to memory", 0x00
+
+str_mon_help3:
+	defm	"c xxxx    - Call a subroutine", 0x00
+
+str_mon_help4:
+	defm	"j xxxx    - Jump to address", 0x00
+
+monitor_move_up:
+	push	bc
+	push	de
+	push	hl
+
+	; Prepare for reading into buffer
+	ld	bc, 0x03c0
+	ld	hl, mon_screenbuff
+	ld	a, 0x00
+	out	(VDP_VRAM_ADDR), a
+	ld	a, 0x08
+	out	(VDP_VRAM_ADDR), a
+monitor_move_up_read_loop:
+	in	a, (VDP_VRAM_DATA)
+	ld	(hl), a
+	inc	hl
+	dec	bc
+	ld	a, b
+	or	c
+	jp	nz, monitor_move_up_read_loop
+
+	; Prepare for writing to display
+	ld	bc, 0x0398
+	ld	hl, mon_screenbuff + 0x28
+	ld	a, 0x00
+	out	(VDP_VRAM_ADDR), a
+	ld	a, 0x08 | 0x40
+	out	(VDP_VRAM_ADDR), a
+monitor_move_up_write_loop:
+	ld	a, (hl)
+	out	(VDP_VRAM_DATA), a
+	inc	hl
+	dec	bc
+	ld	a, b
+	or	c
+	jp	nz, monitor_move_up_write_loop
+
+	ld	b, 0x28
+	ld	a, 0x00
+monitor_move_up_clear_line:
+	out	(VDP_VRAM_DATA), a
+	dec	b
+	jp	nz, monitor_move_up_clear_line
+
+	pop	hl
+	pop	de
+	pop	bc
+	ret
+
+monitor_nextline:
+	push	af
+
+	ld	d, 0x00
+	inc	e
+	ld	a, 0x18
+	cp	e
+	jp	nz, monitor_nextline_end
+
+	; Move block of VRAM up
+	call	monitor_move_up
+	dec	e
+
+monitor_nextline_end:
+	pop	af
+	ret
+
+monitor_nextcharpos:
+	push	af
+	inc	d
+	ld	a, 0x28		; Out of bounds
+	cp	d
+	jp	nz, monitor_nextcharpos_end
+	
+	ld	d, 0x00
+	inc	e
+	ld	a, 0x18
+	cp	e
+	jp	nz, monitor_nextcharpos_end
+
+	call	monitor_move_up
+	dec	e
+
+monitor_nextcharpos_end:
+	pop	af
+	ret
+
+monitor_prevcharpos:
+	push	af
+
+	ld	a, d
+	or	e
+	jp	z, monitor_prevcharpos_end
+
+	dec	d
+	ld	a, 0xff		; Out of bounds
+	cp	d
+	jp	nz, monitor_prevcharpos_end
+	
+	ld	d, 0x27
+	dec	e
+	ld	a, 0xff
+	cp	e
+	jp	nz, monitor_prevcharpos_end
+
+	ld	e, 0x00
+
+monitor_prevcharpos_end:
+	pop	af
+	ret
+
+monitor_putchar:
+	push	de
+	call	VDPSETPOS
+	call	VDPPUTCHAR
+	pop	de
+	call	monitor_nextcharpos
+	ret
+
+monitor_puthex:
+	push	bc
+	ld	c, 0x0a
+
+	ld	b, a
+	and	%11110000
+	rr	a
+	rr	a
+	rr	a
+	rr	a
+	cp	c
+	jp	nc, monitor_puthex_nibble0_letter
+
+	add	a, 0x30
+	call	monitor_putchar
+	jp	monitor_puthex_nibble1
+
+monitor_puthex_nibble0_letter:
+	add	a, 0x37
+	call	monitor_putchar
+
+monitor_puthex_nibble1:
+	ld	a, b
+	and	%00001111
+	cp	c
+	jp	nc, monitor_puthex_nibble1_letter
+
+	add	a, 0x30
+	call	monitor_putchar
+	jp	monitor_puthex_end
+
+monitor_puthex_nibble1_letter:
+	add	a, 0x37
+	call	monitor_putchar
+
+monitor_puthex_end:
+	ld	b, a
+	pop	bc
+	ret
+
+
+monitor_printline:
+	push	af
+monitor_printline_loop:
+	ld	a, (hl)
+	cp	0x00
+	jp	z, monitor_printline_end
+	call	monitor_putchar
+	inc	hl
+	jp	monitor_printline_loop
+monitor_printline_end:
+	pop	af
+	ret
+
+monitor_get_byte:
+	push	bc
+	push	de
+
+	ld	b, 0x02
+	ld	d, 0x00
+	
+	; Check if number (0-9)
+monitor_get_byte_check_num:
+	ld	a, (hl)
+	ld	c, a
+	cp	'0'
+	jp	c, monitor_get_byte_check_hex
+	ld	a, '9'
+	cp	c
+	jp	c, monitor_get_byte_check_hex
+	ld	a, c
+
+	; Normal number
+	sub	a, 0x30
+	jp	monitor_get_byte_is_num
+
+	; Check if number (a-f)
+monitor_get_byte_check_hex:
+	ld	a, c
+	cp	'a'
+	jp	c, monitor_get_byte_end
+	ld	a, 'f'
+	cp	c
+	jp	c, monitor_get_byte_end
+	ld	a, c
+
+	sub	a, 0x57
+
+monitor_get_byte_is_num:
+	ld	c, a
+	rl	e
+	rl	e
+	rl	e
+	rl	e
+	ld	a, e
+	and	%11110000
+	or	c
+	ld	e, a
+
+	inc	hl
+	dec	b
+	jp	nz, monitor_get_byte_check_num
+	
+monitor_get_byte_end:
+	ld	a, e
+	pop	de
+	pop	bc
+	ret
+
+monitor_get_num:
+	push	af
+	push	bc
+
+	ld	de, 0x0000
+	ld	b, 0x04
+	
+	; Check if number (0-9)
+monitor_get_num_check_num:
+	ld	a, (hl)
+	ld	c, a
+	cp	'0'
+	jp	c, monitor_get_num_check_hex
+	ld	a, '9'
+	cp	c
+	jp	c, monitor_get_num_check_hex
+	ld	a, c
+
+	; Normal number
+	sub	a, 0x30
+	jp	monitor_get_num_is_num
+
+	; Check if number (a-f)
+monitor_get_num_check_hex:
+	ld	a, c
+	cp	'a'
+	jp	c, monitor_get_num_end
+	ld	a, 'f'
+	cp	c
+	jp	c, monitor_get_num_end
+	ld	a, c
+
+	sub	a, 0x57
+
+monitor_get_num_is_num:
+	ld	c, a
+	rl	e
+	rl	d
+	rl	e
+	rl	d
+	rl	e
+	rl	d
+	rl	e
+	rl	d
+	ld	a, e
+	and	%11110000
+	or	c
+	ld	e, a
+
+	inc	hl
+	dec	b
+	jp	nz, monitor_get_num_check_num
+	
+monitor_get_num_end:
+	pop	bc
+	pop	af
+	ret
+
+monitor_skip_whitespace:
+	ld	a, (hl)
+	cp	' '
+	ret	nz
+	inc	hl
+	jp	monitor_skip_whitespace
+
+monitor_cmd_read:
+	push	af
+	push	bc
+	push	de
+
+	inc	hl
+
+	call	monitor_skip_whitespace
+	call	monitor_get_num
+	call	monitor_skip_whitespace
+
+	ld	a, (hl)
+	cp	','
+	jp	z, monitor_cmd_read_range
+
+	ld	a, (de)
+	pop	de
+	call	monitor_puthex
+	call	monitor_nextline
+	jp	monitor_cmd_read_end
+
+monitor_cmd_read_range:
+	push	de
+	inc	hl
+	call	monitor_skip_whitespace
+	call	monitor_get_num
+	push	de
+	pop	bc
+	pop	ix
+	pop	de
+	ld	a, b		; check if already zero
+	or	c
+	jp	z, monitor_cmd_read_end
+	ld	h, 0x08
+monitor_cmd_read_range_loop:
+	ld	a, (ix+0)
+	call	monitor_puthex
+	ld	a, ' '
+	call	monitor_putchar
+
+	dec	h
+	jp	nz, monitor_cmd_read_range_loop_continue
+	call	monitor_nextline
+	ld	h, 0x08
+
+monitor_cmd_read_range_loop_continue:
+	inc	ix
+	dec	bc
+	ld	a, b
+	or	c
+	jp	nz, monitor_cmd_read_range_loop
+	call	monitor_nextline
+
+monitor_cmd_read_end:
+	pop	bc
+	pop	af
+	ret
+
+monitor_cmd_write:
+	push	af
+	push	bc
+	push	de
+
+	inc	hl
+
+	call	monitor_skip_whitespace
+	call	monitor_get_num
+	call	monitor_skip_whitespace
+
+	ld	a, (hl)
+	cp	','
+	jp	z, monitor_cmd_write_bytes
+
+	ld	a, 0x00
+	ld	(de), a
+	jp	monitor_cmd_write_end
+
+monitor_cmd_write_bytes:
+	inc	hl
+	call	monitor_skip_whitespace
+monitor_cmd_write_bytes_loop:
+	ld	a, (hl)
+	cp	0x00
+	jp	z, monitor_cmd_write_end
+
+	cp	' '
+	jp	z, monitor_cmd_write_bytes_loop_continue
+
+	call	monitor_get_byte
+	ld	(de), a
+	inc	de
+	jp	monitor_cmd_write_bytes_loop
+
+monitor_cmd_write_bytes_loop_continue:
+	inc	hl
+	jp	monitor_cmd_write_bytes_loop
+
+monitor_cmd_write_end:
+	pop	de
+	pop	bc
+	pop	af
+	ret
+
+monitor_cmd_jump:
+	inc	hl
+	call	monitor_skip_whitespace
+	call	monitor_get_num
+	push	de
+	pop	hl
+	jp	(hl)
+
+monitor_cmd_call:
+	inc	hl
+	call	monitor_skip_whitespace
+	call	monitor_get_num
+	ld	ix, mon_jumppad
+	ld	(ix+0), 0xcd	; Opcode for CALL
+	ld	(ix+1), e	; Address to call
+	ld	(ix+2), d
+	ld	(ix+3), 0xc9	; Opcode for RET
+	call	mon_jumppad
+	ret
+
+monitor_cmd_help:
+	ld	hl, str_mon_help0
+	call	monitor_printline
+	call	monitor_nextline
+	call	monitor_nextline
+
+	ld	hl, str_mon_help1
+	call	monitor_printline
+	call	monitor_nextline
+
+	ld	hl, str_mon_help2
+	call	monitor_printline
+	call	monitor_nextline
+
+	ld	hl, str_mon_help3
+	call	monitor_printline
+	call	monitor_nextline
+
+	ld	hl, str_mon_help4
+	call	monitor_printline
+	call	monitor_nextline
+	call	monitor_nextline
+	ret
+
+monitor_init:
+	call	VDPTXTCLRSCREEN
+	ld	de, 0x0000	; Set character position
+	ld	b, '0'
+	ld	a, 0x00
+	ld	(mon_buffsize), a
+
+	ld	hl, str_mon_title
+	call	monitor_printline
+	call	monitor_nextline
+
+monitor_keyloop:
+	call	PPISCANKEY
+
+	; Test if previous character
+	cp	b
+	jp	z, monitor_keyloop
+	ld	b, a
+
+	; Backspace
+	cp	0x08
+	jp	z, monitor_keyloop_backspace
+
+	; Return
+	cp	0x0d
+	jp	z, monitor_keyloop_return
+
+	; Check length and jump back to start if too long
+	ld	c, a
+	ld	a, (mon_buffsize)
+	cp	0xff
+	jp	z, monitor_keyloop
+
+	; Between printable characters
+	ld	a, c
+	cp	' '		; Space, first printable ASCII character
+	jp	c, monitor_keyloop
+
+	ld	a, '~'		; Tilde, last printable ASCII character
+	cp	c
+	jp	c, monitor_keyloop
+	ld	a, c
+
+	; Add to buffer
+	ld	hl, mon_buff
+	ld	a, (mon_buffsize)
+	ld	l, a
+	ld	(hl), c
+	inc	a
+	ld	(mon_buffsize), a
+
+	ld	a, c
+	call	monitor_putchar
+
+	jp	monitor_keyloop
+
+monitor_keyloop_backspace:
+	ld	hl, mon_buffsize
+	ld	a, (hl)
+	cp	0x01		; Check if lower than 1
+	jp	c, monitor_keyloop
+
+	ld	a, 0x00
+	dec	(hl)
+	call	monitor_prevcharpos
+	call	monitor_putchar
+	call	monitor_prevcharpos
+	
+	jp	monitor_keyloop
+
+monitor_keyloop_return:
+	ld	hl, mon_buff
+	ld	a, (mon_buffsize)
+	ld	l, a
+	xor	a
+	ld	(hl), a		; Write '\0' to end of buffer
+	
+	call	monitor_nextline
+
+	jp	monitor_execute_cmd
+
+monitor_execute_cmd:
+	ld	hl, mon_buff
+
+	ld	a, (hl)
+
+	cp	'h'
+	call	z, monitor_cmd_help
+	jp	z, monitor_reset_buffer
+
+	cp	'r'
+	call	z, monitor_cmd_read
+	jp	z, monitor_reset_buffer
+
+	cp	'w'
+	call	z, monitor_cmd_write
+	jp	z, monitor_reset_buffer
+
+	cp	'c'
+	call	z, monitor_cmd_call
+	jp	z, monitor_reset_buffer
+
+	cp	'j'
+	jp	z, monitor_cmd_jump
+
+	cp	'q'
+	jp	z, monitor_end
+
+	; print some error here
+	ld	hl, str_mon_error
+	call	monitor_printline
+	call	monitor_nextline
+	jp	monitor_reset_buffer
+
+monitor_reset_buffer:
+	ld	a, 0x00
+	ld	(mon_buffsize), a
+	jp	monitor_keyloop
+
+monitor_end:
+	nop

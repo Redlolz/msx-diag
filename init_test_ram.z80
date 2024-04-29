@@ -43,7 +43,7 @@ test_ram:
 	ld	a, 7 | 0x80
 	out	(VDP_REG), a
 
-	
+
 	; Copy font to VRAM
 	ld	a, 0x08		; Lower eight bits of address
 	out	(VDP_VRAM_ADDR), a
@@ -189,12 +189,12 @@ foundsltstrloop:
 	and	%11000000
 	ld	(SSLT), a
 
-	; Test upper 8KB of RAM
+	; Test upper 8KB of RAM with 0xaa
 	ld	hl, 0x8000
 	ld	de, 0xfffe
 	ld	a, 0x00
 ramtest0write:
-	ld	(hl), 0xff
+	ld	(hl), 0xaa
 
 	inc	hl
 	ld	a, d
@@ -208,7 +208,7 @@ ramtest0read:
 	ld	hl, 0xe000
 ramtest0readloop:
 	ld	a, (hl)
-	cp	0xff
+	cp	0xaa
 	jp	nz, ramtestfailed
 
 	inc	hl
@@ -219,14 +219,12 @@ ramtest0readloop:
 	cp	l
 	jp	nz, ramtest0readloop
 
-
-
-	; Test upper 8KB of RAM
+	; Test upper 8KB of RAM with 0x00
 	ld	hl, 0x8000
 	ld	de, 0xfffe
 	ld	a, 0x00
 ramtest1write:
-	ld	(hl), 0x00
+	ld	(hl), 0x55
 
 	inc	hl
 	ld	a, d
@@ -240,7 +238,7 @@ ramtest1read:
 	ld	hl, 0xe000
 ramtest1readloop:
 	ld	a, (hl)
-	cp	0x00
+	cp	0x55
 	jp	nz, ramtestfailed
 
 	inc	hl
@@ -250,6 +248,66 @@ ramtest1readloop:
 	ld	a, e
 	cp	l
 	jp	nz, ramtest1readloop
+
+	; Test upper 8KB of RAM with 0x00
+	ld	hl, 0x8000
+	ld	de, 0xfffe
+	ld	a, 0x00
+ramtest2write:
+	ld	(hl), 0x00
+
+	inc	hl
+	ld	a, d
+	cp	h
+	jp	nz, ramtest2write
+	ld	a, e
+	cp	l
+	jp	nz, ramtest2write
+
+ramtest2read:
+	ld	hl, 0xe000
+ramtest2readloop:
+	ld	a, (hl)
+	cp	0x00
+	jp	nz, ramtestfailed
+
+	inc	hl
+	ld	a, d
+	cp	h
+	jp	nz, ramtest2readloop
+	ld	a, e
+	cp	l
+	jp	nz, ramtest2readloop
+
+	; Test upper 8KB of RAM with 0x00
+	ld	hl, 0x8000
+	ld	de, 0xfffe
+	ld	a, 0x00
+ramtest3write:
+	ld	(hl), 0xff
+
+	inc	hl
+	ld	a, d
+	cp	h
+	jp	nz, ramtest3write
+	ld	a, e
+	cp	l
+	jp	nz, ramtest3write
+
+ramtest3read:
+	ld	hl, 0xe000
+ramtest3readloop:
+	ld	a, (hl)
+	cp	0xff
+	jp	nz, ramtestfailed
+
+	inc	hl
+	ld	a, d
+	cp	h
+	jp	nz, ramtest3readloop
+	ld	a, e
+	cp	l
+	jp	nz, ramtest3readloop
 
 
 ramtestsuccess:

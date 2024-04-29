@@ -2,12 +2,19 @@
 
 str_menu_title_bar:
 	defm	"=== MSX DIAG ===", 0x00
+str_menu_monitor:
+	defm	"[0] Monitor (WIP)", 0x00
 str_menu_full_ram_test:
-	defm	"[0] Full RAM Test (WIP)", 0x00
+	defm	"[1] Full RAM Test (WIP)", 0x00
 str_menu_slot_check:
-	defm	"[1] Slot Checker (WIP)", 0x00
+	defm	"[2] Slot Checker (WIP)", 0x00
 str_menu_keyboard_test:
-	defm	"[2] Keyboard Tester (WIP)", 0x00
+	defm	"[3] Keyboard Tester (WIP)", 0x00
+
+str_menu_license:
+	defm	"Licensed under GPL-3.0", 0x00
+str_menu_copyright:
+	defm	"Copyright(c) 2024 Redlolz", 0x00
 
 str_return_to_main_menu:
 	defm	"[PRESS ANY KEY TO RETURN TO MAIN MENU]", 0x00
@@ -40,259 +47,50 @@ main_menu:
 
 	ld	de, 0x0102
 	call	VDPSETPOS
-	ld	hl, str_menu_full_ram_test
+	ld	hl, str_menu_monitor
 	call	VDPWRSTR
 
 	ld	de, 0x0104
 	call	VDPSETPOS
-	ld	hl, str_menu_slot_check
+	ld	hl, str_menu_full_ram_test
 	call	VDPWRSTR
 
 	ld	de, 0x0106
 	call	VDPSETPOS
+	ld	hl, str_menu_slot_check
+	call	VDPWRSTR
+
+	ld	de, 0x0108
+	call	VDPSETPOS
 	ld	hl, str_menu_keyboard_test
+	call	VDPWRSTR
+
+	ld	de, 0x0115
+	call	VDPSETPOS
+	ld	hl, str_menu_license
+	call	VDPWRSTR
+
+	ld	de, 0x0116
+	call	VDPSETPOS
+	ld	hl, str_menu_copyright
 	call	VDPWRSTR
 
 main_menu_keyloop:
 	call	PPISCANKEY
 
 	cp	'0'
+	jp	z, monitor
+
+	cp	'1'
 	jp	z, full_ram_test
 	
 	jp	main_menu_keyloop
 	
+
 full_ram_test:
-	call	VDPTXTCLRSCREEN
+	include	"ram_test.z80"
+	jp	main_menu
 
-	ld	de, 0x0c00
-	call	VDPSETPOS
-	ld	hl, str_frt_title_bar
-	call	VDPWRSTR
-
-	; Check if expanded slot
-	ld	a, (SSLT)
-	ld	c, a
-	ld	a, %10101010
-	ld	(SSLT), a
-	ld	a, (SSLT)
-	cpl
-	cp	%10101010
-	jp	z, full_ram_test_expnd_slt
-	jp	full_ram_test_no_expnd_slt
-
-full_ram_test_expnd_slt:
-	; Set all subslots to the same
-	ld	a, c
-	cpl
-	and	%11000000
-	ld	c, a
-	rr	c
-	rr	c
-	or	c
-
-	rr	c
-	rr	c
-	or	c
-	
-	rr	c
-	rr	c
-	or	c
-
-	ld	(SSLT), a
-
-
-full_ram_test_no_expnd_slt:
-	; Set the last three primary slots to the same
-	in	a, (PPI_PSLT)
-	and	%11000000
-	ld	c, a
-	rr	c
-	rr	c
-	or	c
-
-	rr	c
-	rr	c
-	or	c
-
-	out	(PPI_PSLT), a
-
-	ld	c, 0x00
-
-	; Print pages strings
-	ld	de, 0x0002
-	call	VDPSETPOS
-	ld	hl, str_frt_page_0
-	call	VDPWRSTR
-
-	ld	de, 0x0003
-	call	VDPSETPOS
-	ld	hl, str_frt_page_1
-	call	VDPWRSTR
-
-	ld	de, 0x0004
-	call	VDPSETPOS
-	ld	hl, str_frt_page_2
-	call	VDPWRSTR
-
-	ld	de, 0x0005
-	call	VDPSETPOS
-	ld	hl, str_frt_page_3
-	call	VDPWRSTR
-
-full_ram_test_page_1:
-	ld	b, 0x00
-	ld	ix, 0x4000
-	ld	hl, 0x4000
-	call	RAMTEST
-
-	ld	a, d
-	or	e
-	jp	nz, full_ram_test_page_1_failed
-	ld	c, 0x01		; Set C to page 1 if successful
-	jp	full_ram_test_page_1_success
-
-full_ram_test_page_1_failed:
-	ld	de, 0x0803
-	call	VDPSETPOS
-	ld	hl, str_frt_failed
-	call	VDPWRSTR
-	jp	full_ram_test_page_2
-full_ram_test_page_1_success:
-	ld	de, 0x0803
-	call	VDPSETPOS
-	ld	hl, str_frt_success
-	call	VDPWRSTR
-	jp	full_ram_test_page_2
-
-
-full_ram_test_page_2:
-	ld	b, 0x00
-	ld	ix, 0x8000
-	ld	hl, 0x4000
-	call	RAMTEST
-
-	ld	a, d
-	or	e
-	jp	nz, full_ram_test_page_2_failed
-	ld	c, 0x02		; Set C to page 2 if successful
-	jp	full_ram_test_page_2_success
-
-full_ram_test_page_2_failed:
-	ld	de, 0x0804
-	call	VDPSETPOS
-	ld	hl, str_frt_failed
-	call	VDPWRSTR
-	jp	full_ram_test_pre_page_3
-full_ram_test_page_2_success:
-	ld	de, 0x0804
-	call	VDPSETPOS
-	ld	hl, str_frt_success
-	call	VDPWRSTR
-	jp	full_ram_test_pre_page_3
-
-full_ram_test_pre_page_3:
-	ld	a, c
-	cp	0x00
-	jp	z, full_ram_test_end
-	ld	hl, 0x40ff
-	cp	0x01
-	jp	z, full_ram_test_page_3
-	rl	h
-
-full_ram_test_page_3:
-	ld	sp, hl		; Change stack pointer to different page
-
-	ld	b, 0x00
-	ld	ix, 0xc000
-	ld	hl, 0x3fff
-	call	RAMTEST
-
-	ld	sp, 0xfffe	; Change stack pointer back
-
-	ld	a, d
-	or	e
-	jp	nz, full_ram_test_page_3_failed
-	jp	full_ram_test_page_3_success
-
-full_ram_test_page_3_failed:
-	ld	de, 0x0805
-	call	VDPSETPOS
-	ld	hl, str_frt_failed
-	call	VDPWRSTR
-	jp	full_ram_test_pre_page_0
-full_ram_test_page_3_success:
-	ld	de, 0x0805
-	call	VDPSETPOS
-	ld	hl, str_frt_success
-	call	VDPWRSTR
-	jp	full_ram_test_pre_page_0
-
-full_ram_test_pre_page_0:
-	ld	hl, RAMTEST
-	ld	de, 0xe000
-	ld	bc, RAMTESTEND - RAMTEST
-	ldir			; Copy RAMTEST to RAM
-
-	ld	hl, full_ram_test_page_0_begin
-	ld	de, 0xe100
-	ld	bc, full_ram_test_page_0_end - full_ram_test_page_0_begin
-	ldir			; Do the same for the helping code
-	jp	0xe100
-
-
-full_ram_test_page_0_begin:
-	in	a, (PPI_PSLT)
-	ld	c, a
-	rr	a
-	rr	a
-	and	%00000011
-	ld	b, a
-	ld	a, c
-	and 	%11111100
-	or	b
-	out	(PPI_PSLT), a	; Change page 0 to RAM
-
-	ld	b, 0x00
-	ld	ix, 0x0000
-	ld	hl, 0x4000
-	call	0xe000		; Temporary RAMTEST location
-
-	ld	a, c
-	out	(PPI_PSLT), a	; Change pages back to original
-
-	ld	a, d
-	or	e
-	jp	nz, full_ram_test_page_0_failed
-	jp	full_ram_test_page_0_success
-
-full_ram_test_page_0_end:
-	nop
-
-
-full_ram_test_page_0_failed:
-	ld	de, 0x0802
-	call	VDPSETPOS
-	ld	hl, str_frt_failed
-	call	VDPWRSTR
-	jp	full_ram_test_end
-full_ram_test_page_0_success:
-	ld	de, 0x0802
-	call	VDPSETPOS
-	ld	hl, str_frt_success
-	call	VDPWRSTR
-	jp	full_ram_test_end
-
-
-full_ram_test_end:
-	ld	de, 0x0116
-	call	VDPSETPOS
-	ld	hl, str_return_to_main_menu
-	call	VDPWRSTR
-
-full_ram_test_keyloop:
-	call	PPISCANKEY
-
-	cp	0xff
-	jp	nz, main_menu
-	
-	jp	full_ram_test_keyloop
+monitor:
+	include "monitor.z80"
+	jp	main_menu

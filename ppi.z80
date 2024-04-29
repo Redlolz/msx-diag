@@ -35,7 +35,7 @@ KEYMAP_INTER:
 	db	'f'
 	db	'g'
 	db	'h'
-	db	'I'
+	db	'i'
 	db	'j'
 	db	'k'
 	db	'l'
@@ -68,7 +68,7 @@ KEYMAP_INTER:
 	db	0x03		; STOP (ETX)
 	db	0x08		; Backspace
 	db	0xff		; SELECT
-	db	0x09		; Return (LF)
+	db	0x0d		; Return (CR)
 	db	' '		; Space
 	db	'*'		; Num *
 	db	'+'		; Num +

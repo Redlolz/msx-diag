@@ -1,6 +1,15 @@
 AS=zasm
+DEPS=main.z80 \
+     vdp.z80 \
+     ppi.z80 \
+     mem.z80 \
+     init_test_vram.z80 \
+     init_test_ram.z80 \
+     menu.z80 \
+     monitor.z80 \
+     font.bin
 
-msxdiag.rom: main.z80 vdp.z80 ppi.z80 mem.z80 test_vram.z80 test_ram.z80 menu.z80 font.bin
+msxdiag.rom: $(DEPS)
 	$(AS) -u -i $< -o $@
 	tools/lst2sym.sh main.lst > $@.sym
 
