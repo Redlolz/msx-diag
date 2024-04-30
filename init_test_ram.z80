@@ -11,6 +11,9 @@ str_success:
 str_failed:
 	defm	"FAILED!",0x00
 
+test_bytes:
+	db	0xaa, 0x55, 0xff, 0x00, 0xaa, 0x55, 0xff, 0x00
+
 test_ram:
 	; Init VDP to Text Mode
 	; VDP Register 0
@@ -189,125 +192,41 @@ foundsltstrloop:
 	and	%11000000
 	ld	(SSLT), a
 
+
+	ld	iy, test_bytes
+	ld	l, 0x8
+ramtestinit:
 	; Test upper 8KB of RAM with 0xaa
-	ld	hl, 0x8000
-	ld	de, 0xfffe
-	ld	a, 0x00
-ramtest0write:
-	ld	(hl), 0xaa
+	ld	ix, 0xe000
+	ld	de, 0x1fff
+	ld	h, (iy+0)
+ramtestwrite:
+	ld	a, h
+	ld	(ix+0), a
 
-	inc	hl
+	inc	ix
+	dec	de
 	ld	a, d
-	cp	h
-	jp	nz, ramtest0write
-	ld	a, e
-	cp	l
-	jp	nz, ramtest0write
+	or	e
+	jp	nz, ramtestwrite
 
-ramtest0read:
-	ld	hl, 0xe000
-ramtest0readloop:
-	ld	a, (hl)
-	cp	0xaa
+	ld	ix, 0xe000
+	ld	de, 0x1fff
+ramtestread:
+	ld	a, (ix+0)
+	cp	h
 	jp	nz, ramtestfailed
 
-	inc	hl
+	inc	ix
+	dec	de
 	ld	a, d
-	cp	h
-	jp	nz, ramtest0readloop
-	ld	a, e
-	cp	l
-	jp	nz, ramtest0readloop
+	or	e
+	jp	nz, ramtestread
 
-	; Test upper 8KB of RAM with 0x00
-	ld	hl, 0x8000
-	ld	de, 0xfffe
-	ld	a, 0x00
-ramtest1write:
-	ld	(hl), 0x55
-
-	inc	hl
-	ld	a, d
-	cp	h
-	jp	nz, ramtest1write
-	ld	a, e
-	cp	l
-	jp	nz, ramtest1write
-
-ramtest1read:
-	ld	hl, 0xe000
-ramtest1readloop:
-	ld	a, (hl)
-	cp	0x55
-	jp	nz, ramtestfailed
-
-	inc	hl
-	ld	a, d
-	cp	h
-	jp	nz, ramtest1readloop
-	ld	a, e
-	cp	l
-	jp	nz, ramtest1readloop
-
-	; Test upper 8KB of RAM with 0x00
-	ld	hl, 0x8000
-	ld	de, 0xfffe
-	ld	a, 0x00
-ramtest2write:
-	ld	(hl), 0x00
-
-	inc	hl
-	ld	a, d
-	cp	h
-	jp	nz, ramtest2write
-	ld	a, e
-	cp	l
-	jp	nz, ramtest2write
-
-ramtest2read:
-	ld	hl, 0xe000
-ramtest2readloop:
-	ld	a, (hl)
-	cp	0x00
-	jp	nz, ramtestfailed
-
-	inc	hl
-	ld	a, d
-	cp	h
-	jp	nz, ramtest2readloop
-	ld	a, e
-	cp	l
-	jp	nz, ramtest2readloop
-
-	; Test upper 8KB of RAM with 0x00
-	ld	hl, 0x8000
-	ld	de, 0xfffe
-	ld	a, 0x00
-ramtest3write:
-	ld	(hl), 0xff
-
-	inc	hl
-	ld	a, d
-	cp	h
-	jp	nz, ramtest3write
-	ld	a, e
-	cp	l
-	jp	nz, ramtest3write
-
-ramtest3read:
-	ld	hl, 0xe000
-ramtest3readloop:
-	ld	a, (hl)
-	cp	0xff
-	jp	nz, ramtestfailed
-
-	inc	hl
-	ld	a, d
-	cp	h
-	jp	nz, ramtest3readloop
-	ld	a, e
-	cp	l
-	jp	nz, ramtest3readloop
+ramtestend:
+	inc	iy
+	dec	l
+	jp	nz, ramtestinit
 
 
 ramtestsuccess:
