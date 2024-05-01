@@ -195,38 +195,53 @@ foundsltstrloop:
 
 	ld	iy, test_bytes
 	ld	l, 0x8
+	dec	l
 ramtestinit:
 	; Test upper 8KB of RAM with 0xaa
 	ld	ix, 0xe000
 	ld	de, 0x1fff
-	ld	h, (iy+0)
-ramtestwrite:
-	ld	a, h
+ramtestinitloop:
+	ld	a, (iy+0)
+	ld	(ix+0), a
+	inc	ix
+	dec	de
+	ld	a, d
+	or	e
+	jp	nz, ramtestinitloop
+
+ramtestloop:
+	ld	ix, 0xe000
+	ld	de, 0x1fff
+ramtestlooprw:
+	ld	a, (ix+0)
+	cp	(iy+0)
+	jp	nz, ramtestfailed
+
+	ld	a, (iy+1)
 	ld	(ix+0), a
 
 	inc	ix
 	dec	de
 	ld	a, d
 	or	e
-	jp	nz, ramtestwrite
+	jp	nz, ramtestlooprw
+ramtestend:
+	inc	iy
+	dec	l
+	jp	nz, ramtestloop
 
 	ld	ix, 0xe000
 	ld	de, 0x1fff
-ramtestread:
+ramtestfinalloop:
 	ld	a, (ix+0)
-	cp	h
+	cp	(iy+0)
 	jp	nz, ramtestfailed
 
 	inc	ix
 	dec	de
 	ld	a, d
 	or	e
-	jp	nz, ramtestread
-
-ramtestend:
-	inc	iy
-	dec	l
-	jp	nz, ramtestinit
+	jp	nz, ramtestfinalloop
 
 
 ramtestsuccess:
