@@ -24,7 +24,7 @@ section of this document.
 
 You have bad video memory, the flashes of red indicate which bits are faulty.
 
-Quick example, The RAM chip responsible for bit 2 (like this `00000x00`, we
+Quick example, the RAM chip responsible for bit 2 (like this `00000x00`, we
 count from zero) is dead which means that the screen will:
 
 * Flash green twice
@@ -36,7 +36,13 @@ of the computer.
 
 ### The screen hangs on "TINY RAM TEST" and does not continue
 
-You have bad main memory.
+You have bad main memory. The RAM test will show you at what address the fault
+occured on and which bits had an unexpected value.
+
+Quick example, you are working on an MSX computer with dynamic RAM and the
+RAM test displays a value of `00100000`. This means that the RAM chip connected
+to pin D5 of the CPU is most likely dead or not making proper contact with its
+socket.
 
 ## LICENSE
 
