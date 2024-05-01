@@ -194,50 +194,50 @@ foundsltstrloop:
 
 
 	ld	iy, test_bytes
-	ld	l, 0x8
-	dec	l
+	ld	b, 0x8
+	dec	b
 ramtestinit:
 	; Test upper 8KB of RAM with 0xaa
-	ld	ix, 0xe000
+	ld	hl, 0xe000
 	ld	de, 0x1fff
 ramtestinitloop:
 	ld	a, (iy+0)
-	ld	(ix+0), a
-	inc	ix
+	ld	(hl), a
+	inc	hl
 	dec	de
 	ld	a, d
 	or	e
 	jp	nz, ramtestinitloop
 
 ramtestloop:
-	ld	ix, 0xe000
+	ld	hl, 0xe000
 	ld	de, 0x1fff
 ramtestlooprw:
-	ld	a, (ix+0)
+	ld	a, (hl)
 	cp	(iy+0)
 	jp	nz, ramtestfailed
 
 	ld	a, (iy+1)
-	ld	(ix+0), a
+	ld	(hl), a
 
-	inc	ix
+	inc	hl
 	dec	de
 	ld	a, d
 	or	e
 	jp	nz, ramtestlooprw
 ramtestend:
 	inc	iy
-	dec	l
+	dec	b
 	jp	nz, ramtestloop
 
-	ld	ix, 0xe000
+	ld	hl, 0xe000
 	ld	de, 0x1fff
 ramtestfinalloop:
-	ld	a, (ix+0)
+	ld	a, (hl)
 	cp	(iy+0)
 	jp	nz, ramtestfailed
 
-	inc	ix
+	inc	hl
 	dec	de
 	ld	a, d
 	or	e
@@ -245,6 +245,7 @@ ramtestfinalloop:
 
 
 ramtestsuccess:
+	dec	hl		; We did an extra increment
 	ld	c, 0x01
 	; Write "SUCCESS" to screen
 	ld	a, 0x50
@@ -252,17 +253,20 @@ ramtestsuccess:
 	ld	a, 0x08 | 0x40
 	out	(VDP_VRAM_ADDR), a
 
-	ld	hl, str_success	; Load address of string into HL
+	ld	de, str_success	; Load address of string into HL
 successstrloop:
-	ld	a, (hl)
+	ld	a, (de)
 	cp	0x00
 	out	(VDP_VRAM_DATA), a
-	inc	hl
+	inc	de
 	jp	nz, successstrloop
 
-	jp printbadaddress
+	jp test_ram_end
 
 ramtestfailed:
+	ld	c, (iy+0)
+	xor	c
+	ex	af, af'
 	ld	c, 0x00
 	; Write "FAILED" to screen
 	ld	a, 0x50
@@ -270,14 +274,12 @@ ramtestfailed:
 	ld	a, 0x08 | 0x40
 	out	(VDP_VRAM_ADDR), a
 
-	ld	d, h
-	ld	e, l
-	ld	hl, str_failed	; Load address of string into HL
+	ld	de, str_failed	; Load address of string into HL
 failedstrloop:
-	ld	a, (hl)
+	ld	a, (de)
 	cp	0x00
 	out	(VDP_VRAM_DATA), a
-	inc	hl
+	inc	de
 	jp	nz, failedstrloop
 
 printbadaddress:
@@ -291,88 +293,53 @@ printbadaddress:
 	ld	a, 'x'
 	out	(VDP_VRAM_DATA), a
 
-outputnibble0:
-	ld	a, d
+	ld	e, 0x04
+hexnumberloop:
+	ld	a, h
+	and	%11110000
 	rr	a
 	rr	a
 	rr	a
 	rr	a
-	and	%00001111
 	ld	b, a
 	ld	a, 0x9
 	cp	b
 	ld	a, b
-	jp	c, hexletter0
-
+	jp	c, hexletter
 	add	a, 0x30
-	out	(VDP_VRAM_DATA), a
-	jp	outputnibble1
-
-hexletter0:
+	jp	hexoutput
+hexletter:
 	add	a, 0x37
+hexoutput:
 	out	(VDP_VRAM_DATA), a
+	rl	l
+	rl	h
+	rl	l
+	rl	h
+	rl	l
+	rl	h
+	rl	l
+	rl	h
+	dec	e
+	jp	nz, hexnumberloop
 
-outputnibble1:
-	ld	a, d
-	and	%00001111
+
+	ld	e, 0x08
+	ld	a, 0xa0
+	out	(VDP_VRAM_ADDR), a
+	ld	a, 0x08 | 0x40
+	out	(VDP_VRAM_ADDR), a
+	ex	af, af'
 	ld	b, a
-	ld	a, 0x9
-	cp	b
+printbrokenbyte:
 	ld	a, b
-	jp	c, hexletter1
-
+	and	%10000000
+	rlca
 	add	a, 0x30
+	rlc	b
 	out	(VDP_VRAM_DATA), a
-	jp	outputnibble2
-
-hexletter1:
-	add	a, 0x37
-	out	(VDP_VRAM_DATA), a
-
-
-outputnibble2:
-	ld	a, e
-	rr	a
-	rr	a
-	rr	a
-	rr	a
-	and	%00001111
-	ld	b, a
-	ld	a, 0x9
-	cp	b
-	ld	a, b
-	jp	c, hexletter2
-
-	add	a, 0x30
-	out	(VDP_VRAM_DATA), a
-	jp	outputnibble3
-
-hexletter2:
-	add	a, 0x37
-	out	(VDP_VRAM_DATA), a
-
-
-outputnibble3:
-	ld	a, e
-	and	%00001111
-	ld	b, a
-	ld	a, 0x9
-	cp	b
-	ld	a, b
-	jp	c, hexletter3
-
-	add	a, 0x30
-	out	(VDP_VRAM_DATA), a
-	jp	test_ram_check_if_failed
-
-hexletter3:
-	add	a, 0x37
-	out	(VDP_VRAM_DATA), a
-
-test_ram_check_if_failed:
-	ld	a, 0x01
-	cp	c
-	jp	z, test_ram_end
+	dec	e
+	jp	nz, printbrokenbyte
 
 test_ram_end_failed:
 	jp	test_ram_end_failed
