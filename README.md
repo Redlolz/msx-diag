@@ -4,19 +4,24 @@ Attempts to diagnose issues in MSX machines.
 
 ## FEATURES
 
+* Can (partly) be used in a system with faulty memory
 * RAM Test
 * VRAM Test
+* Memory Monitor
 
 ## HOW TO USE
 
 1. Write the ROM file to an (E)EPROM and put it in your MSX where
 the BIOS ROM would normally be.
 
-2. Turn on the computer, if all the checks passed you should see a menu with
-various options to test the computer. These are all relatively self-explanatory
+2. Turn on the computer, if you see a menu with various options that means that
+the initial checks have passed, the VRAM and the top 8K of the main memory are
+good.  If you do not see this menu, go to the troubleshooting section of this
+document.
+
+The options on the main menu are all relatively self-explanatory
 and the average technician should have no trouble finding their way around the
-diagnostic tool. If you do not see this menu, go to the troubleshooting
-section of this document.
+diagnostic tool.
 
 ## TROUBLESHOOTING
 
