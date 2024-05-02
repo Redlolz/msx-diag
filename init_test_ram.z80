@@ -12,7 +12,7 @@ str_failed:
 	defm	"FAILED!",0x00
 
 test_bytes:
-	db	0xaa, 0x55, 0xff, 0x00, 0xaa, 0x55, 0xff, 0x00
+	db	0x00, 0xff, 0xaa, 0x55, 0x00, 0xff, 0xaa, 0x55
 
 test_ram:
 	; Init VDP to Text Mode
@@ -246,7 +246,6 @@ ramtestfinalloop:
 
 ramtestsuccess:
 	dec	hl		; We did an extra increment
-	ld	c, 0x01
 	; Write "SUCCESS" to screen
 	ld	a, 0x50
 	out	(VDP_VRAM_ADDR), a
@@ -267,7 +266,6 @@ ramtestfailed:
 	ld	c, (iy+0)
 	xor	c
 	ex	af, af'
-	ld	c, 0x00
 	; Write "FAILED" to screen
 	ld	a, 0x50
 	out	(VDP_VRAM_ADDR), a

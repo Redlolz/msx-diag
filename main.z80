@@ -11,8 +11,10 @@ SSLT:	EQU	0xffff
 	include	"vdp.z80"
 
 	; Load binaries
-font:		incbin	"font.bin"
-font_end:	db	0
+font:		
+	incbin	"font.bin"
+font_end:
+	db	0x00
 
 init:
 	; Setup PPI

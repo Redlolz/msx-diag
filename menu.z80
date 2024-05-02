@@ -16,24 +16,6 @@ str_menu_license:
 str_menu_copyright:
 	defm	"Copyright(c) 2024 Redlolz", 0x00
 
-str_return_to_main_menu:
-	defm	"[PRESS ANY KEY TO RETURN TO MAIN MENU]", 0x00
-
-str_frt_title_bar:
-	defm	"=== RAM TEST ===", 0x00
-str_frt_success:
-	defm	"Success!", 0x00
-str_frt_failed:
-	defm	"Failed!", 0x00
-str_frt_page_0:
-	defm	"Page 0: ", 0x00
-str_frt_page_1:
-	defm	"Page 1: ", 0x00
-str_frt_page_2:
-	defm	"Page 2: ", 0x00
-str_frt_page_3:
-	defm	"Page 3: ", 0x00
-
 
 main_menu:
 	; Clear the screen
@@ -55,15 +37,15 @@ main_menu:
 	ld	hl, str_menu_full_ram_test
 	call	VDPWRSTR
 
-	ld	de, 0x0106
-	call	VDPSETPOS
-	ld	hl, str_menu_slot_check
-	call	VDPWRSTR
+	; ld	de, 0x0106
+	; call	VDPSETPOS
+	; ld	hl, str_menu_slot_check
+	; call	VDPWRSTR
 
-	ld	de, 0x0108
-	call	VDPSETPOS
-	ld	hl, str_menu_keyboard_test
-	call	VDPWRSTR
+	; ld	de, 0x0108
+	; call	VDPSETPOS
+	; ld	hl, str_menu_keyboard_test
+	; call	VDPWRSTR
 
 	ld	de, 0x0115
 	call	VDPSETPOS

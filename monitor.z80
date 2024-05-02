@@ -26,6 +26,9 @@ str_mon_help3:
 str_mon_help4:
 	defm	"j xxxx    - Jump to address", 0x00
 
+str_mon_help5:
+	defm	"q         - Quit monitor", 0x00
+
 monitor_move_up:
 	push	bc
 	push	de

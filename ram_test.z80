@@ -1,3 +1,24 @@
+	jp	full_ram_test_init
+
+str_frt_title_bar:
+	defm	"=== RAM TEST ===", 0x00
+str_frt_success:
+	defm	"Success!", 0x00
+str_frt_failed:
+	defm	"Failed!", 0x00
+str_frt_page_0:
+	defm	"Page 0: ", 0x00
+str_frt_page_1:
+	defm	"Page 1: ", 0x00
+str_frt_page_2:
+	defm	"Page 2: ", 0x00
+str_frt_page_3:
+	defm	"Page 3: ", 0x00
+
+str_frt_return_to_main_menu:
+	defm	"[PRESS ANY KEY TO RETURN TO MAIN MENU]", 0x00
+
+full_ram_test_init:
 	call	VDPTXTCLRSCREEN
 
 	ld	de, 0x0c00
@@ -80,28 +101,24 @@ full_ram_test_page_1:
 	ld	hl, 0x4000
 	ld	b, 0xaa
 	call	RAMTEST
-
 	ld	a, d
 	or	e
 	jp	nz, full_ram_test_page_1_failed
 
 	ld	b, 0x55
 	call	RAMTEST
-
 	ld	a, d
 	or	e
 	jp	nz, full_ram_test_page_1_failed
 
 	ld	b, 0x00
 	call	RAMTEST
-
 	ld	a, d
 	or	e
 	jp	nz, full_ram_test_page_1_failed
 
 	ld	b, 0xff
 	call	RAMTEST
-
 	ld	a, d
 	or	e
 	jp	nz, full_ram_test_page_1_failed
@@ -322,7 +339,7 @@ full_ram_test_page_0_success:
 full_ram_test_end:
 	ld	de, 0x0116
 	call	VDPSETPOS
-	ld	hl, str_return_to_main_menu
+	ld	hl, str_frt_return_to_main_menu
 	call	VDPWRSTR
 
 full_ram_test_keyloop:
