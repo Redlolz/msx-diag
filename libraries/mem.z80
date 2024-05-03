@@ -1,0 +1,141 @@
+	; Fill block of RAM
+	; INPUT
+	;     IX = Start Address
+	;     HL = Length
+	;     B  = Byte To Write
+RAMFILL:
+	push	af
+	push	hl
+	push	ix
+RAMFILLWRITE:
+	ld	(ix+0), b
+	inc	ix
+	dec	hl
+	ld	a, h
+	or	l
+	jr	nz, RAMFILLWRITE
+
+	pop	ix
+	pop	hl
+	pop	af
+	ret
+RAMFILLSIZE:
+	nop
+
+	; Verify block of RAM
+	; INPUT
+	;     IX = Start Address
+	;     HL = Length
+	;     B  = Byte To Read
+	; OUTPUT
+	;     D  = Result (0x01 means faulty)
+RAMVERIFY:
+	push	af
+	push	hl
+	push	ix
+RAMVERIFYWRITE:
+	ld	a, (ix+0)
+	cp	b
+	jr	nz, RAMVERIFYFAILED
+	inc	ix
+	dec	hl
+	ld	a, h
+	or	l
+	jr	nz, RAMVERIFYWRITE
+	jr	RAMVERIFYEND
+
+RAMVERIFYFAILED:
+	ld	d, 0x01
+RAMVERIFYEND:
+	pop	ix
+	pop	hl
+	pop	af
+	ret
+RAMVERIFYSIZE:
+	nop
+
+	; Tests block of RAM
+	; INPUT
+	;     IX = Start Address
+	;     HL = Length
+	;     B  = Byte To Write
+	; OUPUT
+	;     DE = Amount of faults
+RAMTEST:
+	push	hl
+	push	ix
+
+RAMTESTWRITE:
+	ld	(ix+0), b
+	inc	ix
+	dec	hl
+	ld	a, h
+	or	l
+	jr	nz, RAMTESTWRITE
+
+	ld	de, 0x0000
+
+	pop	ix
+	pop	hl
+
+	push	hl
+	push	ix
+
+RAMTESTREAD:
+	ld	a, (ix+0)
+	cp	b
+	jr	z, RAMTESTREADCONT
+	inc	de
+RAMTESTREADCONT:
+	inc	ix
+	dec	hl
+	ld	a, h
+	or	l
+	jr	nz, RAMTESTREAD
+
+	pop	ix
+	pop	hl
+
+	ret
+RAMTESTEND:
+	nop
+
+
+	; Tests block of RAM by writing and reading in the same loop
+	; INPUT
+	;     IX = Start Address
+	;     HL = Length
+	;     B  = Byte To Write
+	;     C  = Byte To Read
+	; OUPUT
+	;     D  = Result (0x01 means faulty)
+RAMTESTWR:
+	push	hl
+	push	ix
+	ld	d, 0x00
+
+RAMTESTWRWRITE:
+	ld	a, (ix+0)
+	cp	c
+	jr	nz, RAMTESTWRFAILED
+
+	ld	a, b
+	ld	(ix+0), a
+
+	inc	ix
+	dec	hl
+	ld	a, h
+	or	l
+	jr	nz, RAMTESTWRWRITE
+
+	jr	RAMTESTWREND
+
+RAMTESTWRFAILED:
+	ld	d, 0x01
+RAMTESTWREND:
+	pop	ix
+	pop	hl
+
+	ret
+RAMTESTWRSIZE:
+	nop

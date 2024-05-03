@@ -1,29 +1,34 @@
-	jp	full_ram_test_init
+	jp	frt_init
 
-str_frt_title_bar:
+frt_str_title_bar:
 	defm	"=== RAM TEST ===", 0x00
-str_frt_success:
+frt_str_success:
 	defm	"Success!", 0x00
-str_frt_failed:
+frt_str_failed:
 	defm	"Failed!", 0x00
-str_frt_page_0:
+frt_str_page_0:
 	defm	"Page 0: ", 0x00
-str_frt_page_1:
+frt_str_page_1:
 	defm	"Page 1: ", 0x00
-str_frt_page_2:
+frt_str_page_2:
 	defm	"Page 2: ", 0x00
-str_frt_page_3:
+frt_str_page_3:
 	defm	"Page 3: ", 0x00
 
-str_frt_return_to_main_menu:
+frt_str_return_to_main_menu:
 	defm	"[PRESS ANY KEY TO RETURN TO MAIN MENU]", 0x00
 
-full_ram_test_init:
+frt_test_bytes:
+	db	0x00, 0xff, 0xaa, 0x55, 0x00, 0xff, 0xaa, 0x55
+frt_test_bytes_size:
+	db	0x00
+
+frt_init:
 	call	VDPTXTCLRSCREEN
 
 	ld	de, 0x0c00
 	call	VDPSETPOS
-	ld	hl, str_frt_title_bar
+	ld	hl, frt_str_title_bar
 	call	VDPWRSTR
 
 	; Check if expanded slot
@@ -34,10 +39,10 @@ full_ram_test_init:
 	ld	a, (SSLT)
 	cpl
 	cp	%10101010
-	jp	z, full_ram_test_expnd_slt
-	jp	full_ram_test_no_expnd_slt
+	jp	z, frt_expnd_slt
+	jp	frt_no_expnd_slt
 
-full_ram_test_expnd_slt:
+frt_expnd_slt:
 	; Set all subslots to the same
 	ld	a, c
 	cpl
@@ -58,7 +63,7 @@ full_ram_test_expnd_slt:
 	ld	(SSLT), a
 
 
-full_ram_test_no_expnd_slt:
+frt_no_expnd_slt:
 	; Set the last three primary slots to the same
 	in	a, (PPI_PSLT)
 	and	%11000000
@@ -78,191 +83,194 @@ full_ram_test_no_expnd_slt:
 	; Print pages strings
 	ld	de, 0x0002
 	call	VDPSETPOS
-	ld	hl, str_frt_page_0
+	ld	hl, frt_str_page_0
 	call	VDPWRSTR
 
 	ld	de, 0x0003
 	call	VDPSETPOS
-	ld	hl, str_frt_page_1
+	ld	hl, frt_str_page_1
 	call	VDPWRSTR
 
 	ld	de, 0x0004
 	call	VDPSETPOS
-	ld	hl, str_frt_page_2
+	ld	hl, frt_str_page_2
 	call	VDPWRSTR
 
 	ld	de, 0x0005
 	call	VDPSETPOS
-	ld	hl, str_frt_page_3
+	ld	hl, frt_str_page_3
 	call	VDPWRSTR
 
-full_ram_test_page_1:
+frt_page_1:
+	ld	e, frt_test_bytes_size - frt_test_bytes - 1
+	ld	iy, frt_test_bytes
+
 	ld	ix, 0x4000
 	ld	hl, 0x4000
-	ld	b, 0xaa
-	call	RAMTEST
-	ld	a, d
-	or	e
-	jp	nz, full_ram_test_page_1_failed
+	ld	b, (iy+0)
+	inc	iy
+	call	RAMFILL
 
-	ld	b, 0x55
-	call	RAMTEST
+frt_page_1_loop:
+	ld	c, b
+	ld	b, (iy+0)
+	call	RAMTESTWR
 	ld	a, d
-	or	e
-	jp	nz, full_ram_test_page_1_failed
+	cp	0x00
+	jp	nz, frt_page_1_failed
+	inc	iy
+	dec	e
+	jp	nz, frt_page_1_loop
 
-	ld	b, 0x00
-	call	RAMTEST
+	call	RAMVERIFY
 	ld	a, d
-	or	e
-	jp	nz, full_ram_test_page_1_failed
-
-	ld	b, 0xff
-	call	RAMTEST
-	ld	a, d
-	or	e
-	jp	nz, full_ram_test_page_1_failed
-
+	cp	0x00
+	jp	nz, frt_page_1_failed
 
 	ld	c, 0x01		; Set C to page 1 if successful
-	jp	full_ram_test_page_1_success
+	jp	frt_page_1_success
 
-full_ram_test_page_1_failed:
+frt_page_1_failed:
 	ld	de, 0x0803
 	call	VDPSETPOS
-	ld	hl, str_frt_failed
+	ld	hl, frt_str_failed
 	call	VDPWRSTR
-	jp	full_ram_test_page_2
-full_ram_test_page_1_success:
+	jp	frt_page_2
+frt_page_1_success:
 	ld	de, 0x0803
 	call	VDPSETPOS
-	ld	hl, str_frt_success
+	ld	hl, frt_str_success
 	call	VDPWRSTR
-	jp	full_ram_test_page_2
+	jp	frt_page_2
 
 
-full_ram_test_page_2:
+frt_page_2:
+	ld	e, frt_test_bytes_size - frt_test_bytes - 1
+	ld	iy, frt_test_bytes
+
 	ld	ix, 0x8000
 	ld	hl, 0x4000
-	ld	b, 0xaa
-	call	RAMTEST
+	ld	b, (iy+0)
+	inc	iy
+	call	RAMFILL
 
+frt_page_2_loop:
+	ld	c, b
+	ld	b, (iy+0)
+	call	RAMTESTWR
 	ld	a, d
-	or	e
-	jp	nz, full_ram_test_page_2_failed
+	cp	0x00
+	jp	nz, frt_page_2_failed
+	inc	iy
+	dec	e
+	jp	nz, frt_page_2_loop
 
-	ld	b, 0x55
-	call	RAMTEST
-
+	call	RAMVERIFY
 	ld	a, d
-	or	e
-	jp	nz, full_ram_test_page_2_failed
-
-	ld	b, 0x00
-	call	RAMTEST
-
-	ld	a, d
-	or	e
-	jp	nz, full_ram_test_page_2_failed
-
-	ld	b, 0xff
-	call	RAMTEST
-
-	ld	a, d
-	or	e
-	jp	nz, full_ram_test_page_2_failed
+	cp	0x00
+	jp	nz, frt_page_2_failed
 
 	ld	c, 0x02		; Set C to page 2 if successful
-	jp	full_ram_test_page_2_success
+	jp	frt_page_2_success
 
-full_ram_test_page_2_failed:
+frt_page_2_failed:
 	ld	de, 0x0804
 	call	VDPSETPOS
-	ld	hl, str_frt_failed
+	ld	hl, frt_str_failed
 	call	VDPWRSTR
-	jp	full_ram_test_pre_page_3
-full_ram_test_page_2_success:
+	jp	frt_pre_page_3
+frt_page_2_success:
 	ld	de, 0x0804
 	call	VDPSETPOS
-	ld	hl, str_frt_success
+	ld	hl, frt_str_success
 	call	VDPWRSTR
-	jp	full_ram_test_pre_page_3
+	jp	frt_pre_page_3
 
-full_ram_test_pre_page_3:
+frt_pre_page_3:
 	ld	a, c
 	cp	0x00
-	jp	z, full_ram_test_end
-	ld	hl, 0x40ff
+	jp	z, frt_end
+	ld	hl, 0x40fe
 	cp	0x01
-	jp	z, full_ram_test_page_3
+	jp	z, frt_page_3
 	rl	h
 
-full_ram_test_page_3:
+frt_page_3:
 	ld	sp, hl		; Change stack pointer to different page
+
+	ld	e, frt_test_bytes_size - frt_test_bytes - 1
+	ld	iy, frt_test_bytes
 
 	ld	ix, 0xc000
 	ld	hl, 0x3fff
-	ld	b, 0xaa
-	call	RAMTEST
+	ld	b, (iy+0)
+	inc	iy
+	call	RAMFILL
 
+frt_page_3_loop:
+	ld	c, b
+	ld	b, (iy+0)
+	call	RAMTESTWR
 	ld	a, d
-	or	e
-	jp	nz, full_ram_test_page_3_failed
+	cp	0x00
+	jp	nz, frt_page_3_failed
+	inc	iy
+	dec	e
+	jp	nz, frt_page_3_loop
 
-	ld	b, 0x55
-	call	RAMTEST
-
+	call	RAMVERIFY
 	ld	a, d
-	or	e
-	jp	nz, full_ram_test_page_3_failed
+	cp	0x00
+	jp	nz, frt_page_3_failed
 
-	ld	b, 0x00
-	call	RAMTEST
+	ld	c, 0x02		; Set C to page 2 if successful
+	jp	frt_page_3_success
 
-	ld	a, d
-	or	e
-	jp	nz, full_ram_test_page_3_failed
-
-	ld	b, 0xff
-	call	RAMTEST
-
-	ld	a, d
-	or	e
-	jp	nz, full_ram_test_page_3_failed
-
-
-	jp	full_ram_test_page_3_success
-
-full_ram_test_page_3_failed:
+frt_page_3_failed:
 	ld	sp, 0xffef	; Change stack pointer back
 	ld	de, 0x0805
 	call	VDPSETPOS
-	ld	hl, str_frt_failed
+	ld	hl, frt_str_failed
 	call	VDPWRSTR
-	jp	full_ram_test_pre_page_0
+	jp	frt_pre_page_0
 
-full_ram_test_page_3_success:
+frt_page_3_success:
 	ld	sp, 0xffef	; Change stack pointer back
 	ld	de, 0x0805
 	call	VDPSETPOS
-	ld	hl, str_frt_success
+	ld	hl, frt_str_success
 	call	VDPWRSTR
-	jp	full_ram_test_pre_page_0
+	jp	frt_pre_page_0
 
-full_ram_test_pre_page_0:
-	ld	hl, RAMTEST
+frt_pre_page_0:
+	ld	hl, RAMFILL
 	ld	de, 0xe000
-	ld	bc, RAMTESTEND - RAMTEST
-	ldir			; Copy RAMTEST to RAM
+	ld	bc, RAMFILLSIZE - RAMFILL
+	ldir			; Copy RAMFILL to RAM
 
-	ld	hl, full_ram_test_page_0_begin
+	ld	hl, RAMVERIFY
 	ld	de, 0xe100
-	ld	bc, full_ram_test_page_0_end - full_ram_test_page_0_begin
+	ld	bc, RAMVERIFYSIZE - RAMVERIFY
+	ldir			; Copy RAMVERIFY to RAM
+
+	ld	hl, RAMTESTWR
+	ld	de, 0xe200
+	ld	bc, RAMTESTWRSIZE - RAMTESTWR
+	ldir			; Copy RAMTESTWR to RAM
+
+	ld	hl, frt_page_0_begin
+	ld	de, 0xe300
+	ld	bc, frt_page_0_end - frt_page_0_begin
 	ldir			; Do the same for the helping code
-	jp	0xe100
+
+	ld	hl, frt_test_bytes
+	ld	de, 0xe400
+	ld	bc, frt_test_bytes_size - frt_test_bytes
+	ldir			; Copy test_bytes
+	jp	0xe300
 
 
-full_ram_test_page_0_begin:
+frt_page_0_begin:
 	in	a, (PPI_PSLT)
 	ld	c, a
 	rr	a
@@ -273,77 +281,66 @@ full_ram_test_page_0_begin:
 	and 	%11111100
 	or	b
 	out	(PPI_PSLT), a	; Change page 0 to RAM
+	push	bc
+
+	ld	e, frt_test_bytes_size - frt_test_bytes - 1
+	ld	iy, 0xe400
 
 	ld	ix, 0x0000
 	ld	hl, 0x4000
-	ld	b, 0xaa
-	call	0xe000		; Temporary RAMTEST location
-	push	de
+	ld	b, (iy+0)
+	inc	iy
+	call	0xe000		; Temporary location of RAMFILL
 
-	ld	b, 0x55
-	call	0xe000		; Temporary RAMTEST location
-	push	de
+frt_page_0_loop:
+	ld	c, b
+	ld	b, (iy+0)
+	call	0xe200		; Temporary location of RAMTESTWR
+	ld	a, d
+	cp	0x00
+	jr	nz, frt_page_0_return
+	inc	iy
+	dec	e
+	jr	nz, frt_page_0_loop
 
-	ld	b, 0x00
-	call	0xe000		; Temporary RAMTEST location
-	push	de
+	call	0xe100		; Temporary location of RAMVERIFY
 
-	ld	b, 0xff
-	call	0xe000		; Temporary RAMTEST location
-	push	de
-
+frt_page_0_return:
+	pop	bc
 	ld	a, c
 	out	(PPI_PSLT), a	; Change pages back to original
 
-	pop	de
 	ld	a, d
-	or	e
-	jp	nz, full_ram_test_page_0_failed
+	cp	0x00
+	jp	nz, frt_page_0_failed
+	jp	frt_page_0_success
 
-	pop	de
-	ld	a, d
-	or	e
-	jp	nz, full_ram_test_page_0_failed
-
-	pop	de
-	ld	a, d
-	or	e
-	jp	nz, full_ram_test_page_0_failed
-
-	pop	de
-	ld	a, d
-	or	e
-	jp	nz, full_ram_test_page_0_failed
-
-
-	jp	full_ram_test_page_0_success
-
-full_ram_test_page_0_end:
+frt_page_0_end:
 	nop
 
 
-full_ram_test_page_0_failed:
+frt_page_0_failed:
 	ld	de, 0x0802
 	call	VDPSETPOS
-	ld	hl, str_frt_failed
+	ld	hl, frt_str_failed
 	call	VDPWRSTR
-	jp	full_ram_test_end
-full_ram_test_page_0_success:
+	jp	frt_end
+frt_page_0_success:
 	ld	de, 0x0802
 	call	VDPSETPOS
-	ld	hl, str_frt_success
+	ld	hl, frt_str_success
 	call	VDPWRSTR
-	jp	full_ram_test_end
+	jp	frt_end
 
 
-full_ram_test_end:
+frt_end:
 	ld	de, 0x0116
 	call	VDPSETPOS
-	ld	hl, str_frt_return_to_main_menu
+	ld	hl, frt_str_return_to_main_menu
 	call	VDPWRSTR
 
-full_ram_test_keyloop:
+frt_keyloop:
 	call	PPISCANKEY
 
 	cp	0xff
-	jp	z, full_ram_test_keyloop
+	jp	z, frt_keyloop

@@ -1,11 +1,12 @@
 AS=zasm
 DEPS=main.z80 \
-     vdp.z80 \
-     ppi.z80 \
-     mem.z80 \
+     libraries/vdp.z80 \
+     libraries/ppi.z80 \
+     libraries/mem.z80 \
      init_test_vram.z80 \
      init_test_ram.z80 \
      menu.z80 \
+     ram_test.z80 \
      monitor.z80 \
      font.bin
 
