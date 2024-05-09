@@ -1,0 +1,392 @@
+	jp	jst_init
+
+joy1_up:	EQU	0xf000
+joy1_down:	EQU	0xf001
+joy1_left:	EQU	0xf002
+joy1_right:	EQU	0xf003
+joy1_trig_a:	EQU	0xf004
+joy1_trig_b:	EQU	0xf005
+
+joy2_up:	EQU	0xf006
+joy2_down:	EQU	0xf007
+joy2_left:	EQU	0xf008
+joy2_right:	EQU	0xf009
+joy2_trig_a:	EQU	0xf00a
+joy2_trig_b:	EQU	0xf00b
+
+jst_patterns:
+	incbin	"joystick_sprites.bin"
+jst_patterns_end:
+	db	0x00
+
+jst_col_addr_joy1_up:
+	dw	0x3907
+	db	35
+	dw	0x3908
+	db	36
+	dw	0x3926
+	db	37
+	dw	0x3927
+	db	38
+	dw	0x3928
+	db	38
+	dw	0x3929
+	db	39
+jst_col_addr_joy1_up_end:
+	db	0
+
+jst_col_addr_joy1_down:
+	dw	0x39c6
+	db	44
+	dw	0x39c7
+	db	45
+	dw	0x39c8
+	db	45
+	dw	0x39c9
+	db	46
+	dw	0x39e7
+	db	47
+	dw	0x39e8
+	db	48
+jst_col_addr_joy1_down_end:
+	db	0
+
+jst_col_addr_joy1_left:
+	dw	0x3945
+	db	31
+	dw	0x3965
+	db	29
+	dw	0x3985
+	db	29
+	dw	0x39a5
+	db	34
+	dw	0x3964
+	db	32
+	dw	0x3984
+	db	33
+jst_col_addr_joy1_left_end:
+	db	0
+
+jst_col_addr_joy1_right:
+	dw	0x394a
+	db	40
+	dw	0x396a
+	db	30
+	dw	0x398a
+	db	30
+	dw	0x39aa
+	db	43
+	dw	0x396b
+	db	41
+	dw	0x398b
+	db	42
+jst_col_addr_joy1_right_end:
+	db	0
+
+jst_col_addr_joy1_trig_a:
+	dw	0x3947
+	db	49
+	dw	0x3967
+	db	29
+	dw	0x3987
+	db	29
+	dw	0x39a7
+	db	55
+	dw	0x3966
+	db	51
+	dw	0x3986
+	db	53
+jst_col_addr_joy1_trig_a_end:
+	db	0
+
+jst_col_addr_joy1_trig_b:
+	dw	0x3948
+	db	50
+	dw	0x3968
+	db	30
+	dw	0x3988
+	db	30
+	dw	0x39a8
+	db	56
+	dw	0x3969
+	db	52
+	dw	0x3989
+	db	54
+jst_col_addr_joy1_trig_b_end:
+	db	0
+
+jst_col_addr_joy2_up:
+	dw	0x3917
+	db	35
+	dw	0x3918
+	db	36
+	dw	0x3936
+	db	37
+	dw	0x3937
+	db	38
+	dw	0x3938
+	db	38
+	dw	0x3939
+	db	39
+jst_col_addr_joy2_up_end:
+	db	0
+
+jst_col_addr_joy2_down:
+	dw	0x39d6
+	db	44
+	dw	0x39d7
+	db	45
+	dw	0x39d8
+	db	45
+	dw	0x39d9
+	db	46
+	dw	0x39f7
+	db	47
+	dw	0x39f8
+	db	48
+jst_col_addr_joy2_down_end:
+	db	0
+
+jst_col_addr_joy2_left:
+	dw	0x3955
+	db	31
+	dw	0x3975
+	db	29
+	dw	0x3995
+	db	29
+	dw	0x39b5
+	db	34
+	dw	0x3974
+	db	32
+	dw	0x3994
+	db	33
+jst_col_addr_joy2_left_end:
+	db	0
+
+jst_col_addr_joy2_right:
+	dw	0x395a
+	db	40
+	dw	0x397a
+	db	30
+	dw	0x399a
+	db	30
+	dw	0x39ba
+	db	43
+	dw	0x397b
+	db	41
+	dw	0x399b
+	db	42
+jst_col_addr_joy2_right_end:
+	db	0
+
+jst_col_addr_joy2_trig_a:
+	dw	0x3957
+	db	49
+	dw	0x3977
+	db	29
+	dw	0x3997
+	db	29
+	dw	0x39b7
+	db	55
+	dw	0x3976
+	db	51
+	dw	0x3996
+	db	53
+jst_col_addr_joy2_trig_a_end:
+	db	0
+
+jst_col_addr_joy2_trig_b:
+	dw	0x3958
+	db	50
+	dw	0x3978
+	db	30
+	dw	0x3998
+	db	30
+	dw	0x39b8
+	db	56
+	dw	0x3979
+	db	52
+	dw	0x3999
+	db	54
+jst_col_addr_joy2_trig_b_end:
+	db	0
+
+
+	; Changes the color in the color table for multiple addresses
+	; INPUT
+	;     IX = List of addresses
+	;     BC = Length of list
+jst_change_color_addresses:
+	push	ix
+	push	bc
+	push	de
+	push	hl
+	ld	d, 0x00
+	jp	nz, jst_change_color_addresses_loop
+	ld	d, 28
+jst_change_color_addresses_loop:
+	ld	h, (ix+1)
+	ld	l, (ix+0)
+	ld	a, (ix+2)
+	sub	a, d
+	call	VDPWRITEVRAM
+	inc	ix
+	inc	ix
+	inc	ix
+	dec	bc
+	dec	bc
+	dec	bc
+	ld	a, b
+	or	c
+	jp	nz, jst_change_color_addresses_loop
+	pop	hl
+	pop	de
+	pop	bc
+	pop	ix
+	ret
+
+jst_init:
+	ld	a, 0x00
+	ld	hl, 0x0000
+	ld	bc, 0x4000
+	call	VDPFILLVRAM
+
+	call	VDPSETMODEGRPH2
+
+	; Copy patterns
+	ld	ix, jst_patterns
+	ld	bc, jst_patterns_end - jst_patterns
+	ld	hl, 0x0800
+	call	VDPCPYTOVRAM
+
+	; Fill with color
+	ld	a, VDP_COL_WHITE << 4 | VDP_COL_BLACK
+	ld	hl, 0x2000
+	ld	bc, 0x1800
+	call	VDPFILLVRAM
+
+	; Init PSG
+	ld	b, 0x07
+	ld	a, %10000000
+	call	PSGWRITEREG
+
+jst_loop:
+	; Read first joystick port
+	ld	b, 0x0f
+	ld	a, %10001111
+	call	PSGWRITEREG
+
+	ld	b, 0x0e
+	call	PSGREADREG
+	and	0x7f
+
+	cpl
+	ld	b, a
+	ld	hl, joy1_up
+	ld	c, %00000001
+	ld	d, 0x6
+jst_get_joy1_loop:
+	ld	a, b
+	and	c
+	ld	(hl), a
+	rr	b
+	inc	hl
+	dec	d
+	jp	nz, jst_get_joy1_loop
+
+	ld	a, (joy1_up)
+	cp	0x1
+	ld	ix, jst_col_addr_joy1_up
+	ld	bc, jst_col_addr_joy1_up_end - jst_col_addr_joy1_up
+	call	jst_change_color_addresses
+
+	ld	a, (joy1_down)
+	cp	0x1
+	ld	ix, jst_col_addr_joy1_down
+	ld	bc, jst_col_addr_joy1_down_end - jst_col_addr_joy1_down
+	call	jst_change_color_addresses
+
+	ld	a, (joy1_left)
+	cp	0x1
+	ld	ix, jst_col_addr_joy1_left
+	ld	bc, jst_col_addr_joy1_left_end - jst_col_addr_joy1_left
+	call	jst_change_color_addresses
+
+	ld	a, (joy1_right)
+	cp	0x1
+	ld	ix, jst_col_addr_joy1_right
+	ld	bc, jst_col_addr_joy1_right_end - jst_col_addr_joy1_right
+	call	jst_change_color_addresses
+
+	ld	a, (joy1_trig_a)
+	cp	0x1
+	ld	ix, jst_col_addr_joy1_trig_a
+	ld	bc, jst_col_addr_joy1_trig_a_end - jst_col_addr_joy1_trig_a
+	call	jst_change_color_addresses
+
+	ld	a, (joy1_trig_b)
+	cp	0x1
+	ld	ix, jst_col_addr_joy1_trig_b
+	ld	bc, jst_col_addr_joy1_trig_b_end - jst_col_addr_joy1_trig_b
+	call	jst_change_color_addresses
+
+	; Read second joystick port
+	ld	b, 0x0f
+	ld	a, %11001111
+	call	PSGWRITEREG
+
+	ld	b, 0x0e
+	call	PSGREADREG
+	and	0x7f
+
+	cpl
+	ld	b, a
+	ld	hl, joy2_up
+	ld	c, %00000001
+	ld	d, 0x6
+jst_get_joy2_loop:
+	ld	a, b
+	and	c
+	ld	(hl), a
+	rr	b
+	inc	hl
+	dec	d
+	jp	nz, jst_get_joy2_loop
+
+	ld	a, (joy2_up)
+	cp	0x1
+	ld	ix, jst_col_addr_joy2_up
+	ld	bc, jst_col_addr_joy2_up_end - jst_col_addr_joy2_up
+	call	jst_change_color_addresses
+
+	ld	a, (joy2_down)
+	cp	0x1
+	ld	ix, jst_col_addr_joy2_down
+	ld	bc, jst_col_addr_joy2_down_end - jst_col_addr_joy2_down
+	call	jst_change_color_addresses
+
+	ld	a, (joy2_left)
+	cp	0x1
+	ld	ix, jst_col_addr_joy2_left
+	ld	bc, jst_col_addr_joy2_left_end - jst_col_addr_joy2_left
+	call	jst_change_color_addresses
+
+	ld	a, (joy2_right)
+	cp	0x1
+	ld	ix, jst_col_addr_joy2_right
+	ld	bc, jst_col_addr_joy2_right_end - jst_col_addr_joy2_right
+	call	jst_change_color_addresses
+
+	ld	a, (joy2_trig_a)
+	cp	0x1
+	ld	ix, jst_col_addr_joy2_trig_a
+	ld	bc, jst_col_addr_joy2_trig_a_end - jst_col_addr_joy2_trig_a
+	call	jst_change_color_addresses
+
+	ld	a, (joy2_trig_b)
+	cp	0x1
+	ld	ix, jst_col_addr_joy2_trig_b
+	ld	bc, jst_col_addr_joy2_trig_b_end - jst_col_addr_joy2_trig_b
+	call	jst_change_color_addresses
+jst_loop_end:
+	jp	jst_loop

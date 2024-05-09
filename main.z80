@@ -8,6 +8,7 @@ SSLT:	EQU	0xffff
 	; Load syscalls
 	include	"libraries/mem.z80"
 	include	"libraries/ppi.z80"
+	include	"libraries/psg.z80"
 	include	"libraries/vdp.z80"
 
 	; Load binaries
@@ -17,6 +18,7 @@ font_end:
 	db	0x00
 
 init:
+	di
 	; Setup PPI
 	ld	a, %10000010
 	out	(PPI_CMD), a

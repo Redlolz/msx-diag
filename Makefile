@@ -1,14 +1,17 @@
 AS=zasm
 DEPS=main.z80 \
-     libraries/vdp.z80 \
-     libraries/ppi.z80 \
-     libraries/mem.z80 \
-     init_test_vram.z80 \
-     init_test_ram.z80 \
-     menu.z80 \
-     ram_test.z80 \
-     monitor.z80 \
-     font.bin
+	libraries/vdp.z80 \
+	libraries/ppi.z80 \
+	libraries/psg.z80 \
+	libraries/mem.z80 \
+	init_test_vram.z80 \
+	init_test_ram.z80 \
+	menu.z80 \
+	monitor.z80 \
+	ram_test.z80 \
+	joystick_test.z80 \
+	joystick_sprites.bin \
+	font.bin
 
 msxdiag.rom: $(DEPS)
 	$(AS) -u -i $< -o $@
@@ -16,6 +19,9 @@ msxdiag.rom: $(DEPS)
 
 font.bin: font.png
 	python tools/font2bin.py $< $@
+
+joystick_sprites.bin: joystick_sprites.png
+	python tools/tileset2bin.py $< $@
 
 .PHONY: run flash clean
 

@@ -1,0 +1,29 @@
+PSG_REG_SELECT:	EQU	0xa0
+PSG_REG_WRITE:	EQU	0xa1
+PSG_REG_READ:	EQU	0xa2
+
+
+	; Reads from a PSG register
+	; INPUT
+	;     B = Register
+	; OUTPUT
+	;     A = Value
+PSGREADREG:
+	ld	a, b
+	out	(PSG_REG_SELECT), a
+	in	a, (PSG_REG_READ)
+	ret
+
+
+
+	; Write to a PSG register
+	; INPUT
+	;     B = Register
+	;     A = Value
+PSGWRITEREG:
+	push	af
+	ld	a, b
+	out	(PSG_REG_SELECT), a
+	pop	af
+	out	(PSG_REG_WRITE), a
+	ret

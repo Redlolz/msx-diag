@@ -53,17 +53,15 @@ test_ram:
 	ld	a, 0x01 | 0x40	; Upper eight bits of address
 	out	(VDP_VRAM_ADDR), a
 
-	ld	de, font	; Index
-	ld	hl, font_end	; Size
+	ld	ix, font	; Index
+	ld	hl, font_end - font	; Size
 fntcpyloop:
-	ld	a, (de)		; Data
+	ld	a, (ix+0)		; Data
 	out	(VDP_VRAM_DATA), a
-	inc	de
-	ld	a,h		; Compare HL to DE for loop
-	cp	d
-	jp	nz, fntcpyloop
-	ld	a,l
-	cp	e
+	inc	ix
+	dec	hl
+	ld	a, h
+	or	l
 	jp	nz, fntcpyloop
 
 

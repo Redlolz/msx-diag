@@ -19,6 +19,129 @@ VDP_COL_MAGENTA:	EQU	0x0d
 VDP_COL_GRAY:		EQU	0x0e
 VDP_COL_WHITE:		EQU	0x0f
 
+
+	; Sets the VDP mode to Text
+VDPSETMODETXT:
+	push	af
+	; VDP Register 0
+	ld	a, %00000000
+	out	(VDP_REG), a
+	ld	a, 0 | 0x80
+	out	(VDP_REG), a
+	; VDP Register 1
+	ld	a, %11010000
+	out	(VDP_REG), a
+	ld	a, 1 | 0x80
+	out	(VDP_REG), a
+	; VDP Register 2
+	ld	a, %00000010
+	out	(VDP_REG), a
+	ld	a, 2 | 0x80
+	out	(VDP_REG), a
+	; VDP Register 4
+	ld	a, %00000000
+	out	(VDP_REG), a
+	ld	a, 4 | 0x80
+	out	(VDP_REG), a
+	pop	af
+	ret
+
+
+
+	; Sets the VDP mode to Graphics I
+VDPSETMODEGRPH1:
+	push	af
+	; VDP Register 0
+	ld	a, %00000000
+	out	(VDP_REG), a
+	ld	a, 0 | 0x80
+	out	(VDP_REG), a
+	; VDP Register 1
+	ld	a, %11000000
+	out	(VDP_REG), a
+	ld	a, 1 | 0x80
+	out	(VDP_REG), a
+	; VDP Register 2
+	ld	a, %00000101
+	out	(VDP_REG), a
+	ld	a, 2 | 0x80
+	out	(VDP_REG), a
+	; VDP Register 3
+	ld	a, %10000000
+	out	(VDP_REG), a
+	ld	a, 3 | 0x80
+	out	(VDP_REG), a
+	; VDP Register 4
+	ld	a, %00000001
+	out	(VDP_REG), a
+	ld	a, 4 | 0x80
+	out	(VDP_REG), a
+	; VDP Register 5
+	ld	a, %00100000
+	out	(VDP_REG), a
+	ld	a, 5 | 0x80
+	out	(VDP_REG), a
+	; VDP Register 6
+	ld	a, %00000000
+	out	(VDP_REG), a
+	ld	a, 6 | 0x80
+	out	(VDP_REG), a
+	; VDP Register 7
+	ld	a, %00000001
+	out	(VDP_REG), a
+	ld	a, 7 | 0x80
+	out	(VDP_REG), a
+	pop	af
+	ret
+
+
+
+	; Sets the VDP mode to Graphics II
+VDPSETMODEGRPH2:
+	push	af
+	; VDP Register 0
+	ld	a, %00000010
+	out	(VDP_REG), a
+	ld	a, 0 | 0x80
+	out	(VDP_REG), a
+	; VDP Register 1
+	ld	a, %11000010
+	out	(VDP_REG), a
+	ld	a, 1 | 0x80
+	out	(VDP_REG), a
+	; VDP Register 2
+	ld	a, %00001110
+	out	(VDP_REG), a
+	ld	a, 2 | 0x80
+	out	(VDP_REG), a
+	; VDP Register 3
+	ld	a, %11111111
+	out	(VDP_REG), a
+	ld	a, 3 | 0x80
+	out	(VDP_REG), a
+	; VDP Register 4
+	ld	a, %00000011
+	out	(VDP_REG), a
+	ld	a, 4 | 0x80
+	out	(VDP_REG), a
+	; VDP Register 5
+	ld	a, %01110110
+	out	(VDP_REG), a
+	ld	a, 5 | 0x80
+	out	(VDP_REG), a
+	; VDP Register 6
+	ld	a, %00000011
+	out	(VDP_REG), a
+	ld	a, 6 | 0x80
+	out	(VDP_REG), a
+	; VDP Register 7
+	ld	a, %00001111
+	out	(VDP_REG), a
+	ld	a, 7 | 0x80
+	out	(VDP_REG), a
+	pop	af
+	ret
+
 	; Changes DE to contain an index to the name table
 	; INPUT
 	;     D = X screen coordinate
@@ -54,42 +177,47 @@ VDPSETPOSLOOPEND:
 
 
 
-	; Changes foreground color to value in A
+	; Changes color to value in A
 	; INPUT
-	;     A = Foreground Color
+	;     A = Color (BG = bit 0-3 FG = bit 4-7)
 VDPSETFG:
-	push	bc
-	ld	b, a
-
-	ld	a, VDP_COL_WHITE << 4 | VDP_COL_BLACK
+	; VDP Register 7
 	out	(VDP_REG), a
 	ld	a, 7 | 0x80
 	out	(VDP_REG), a
-
-	pop	bc
 	ret
 
-
-
-	; Changes background color to value in A
-	; INPUT
-	;     A = Background Color
-VDPSETBG:
-	ret
 	
+
+	; Write byte to VRAM
+	; INPUT
+	;     A  = Value
+	;     HL = Adress
+VDPWRITEVRAM:
+	push	af
+	ld	a, l
+	out	(VDP_VRAM_ADDR), a
+	ld	a, h
+	or	0x40
+	out	(VDP_VRAM_ADDR), a
+	pop	af
+	out	(VDP_VRAM_DATA), a
+	ret
+
 
 
 	; Fills VRAM with specified byte
 	; INPUT
 	;     A  = Specified byte
-	;     DE = Length
+	;     BC = Length
 	;     HL = Address
 VDPFILLVRAM:
 	push	af
 	push	bc
 	push	de
+	push	hl
 
-	ld	b, a
+	ld	d, a
 
 	; Lower eight bits of address
 	ld	a, l
@@ -100,14 +228,51 @@ VDPFILLVRAM:
 	out	(VDP_VRAM_ADDR), a
 
 VDPFILLVRAMLOOP:
-	ld	a, b
-	out	(VDP_VRAM_DATA), a
-	dec	de
 	ld	a, d
-	or	e
+	out	(VDP_VRAM_DATA), a
+	dec	bc
+	ld	a, b
+	or	c
 	jp	nz, VDPFILLVRAMLOOP
 	
+	pop	hl
 	pop	de
+	pop	bc
+	pop	af
+	ret
+
+
+
+	; Copy from RAM to VRAM
+	; INPUT
+	;     BC = Length
+	;     HL = VRAM Address
+	;     IX = RAM Adress
+VDPCPYTOVRAM:
+	push	af
+	push	bc
+	push	hl
+	push	ix
+
+	; Lower eight bits of address
+	ld	a, l
+	out	(VDP_VRAM_ADDR), a
+	; Upper eight bits of address
+	ld	a, h
+	or	0x40		; Enable write bit
+	out	(VDP_VRAM_ADDR), a
+
+VDPCPYTOVRAMLOOP:
+	ld	a, (ix+0)
+	out	(VDP_VRAM_DATA), a
+	inc	ix
+	dec	bc
+	ld	a, b
+	or	c
+	jp	nz, VDPCPYTOVRAMLOOP
+	
+	pop	ix
+	pop	hl
 	pop	bc
 	pop	af
 	ret

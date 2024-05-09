@@ -1,78 +1,94 @@
 	jp	main_menu
 
-str_menu_title_bar:
+main_menu_str_title_bar:
 	defm	"=== MSX DIAG ===", 0x00
-str_menu_monitor:
-	defm	"[0] Monitor (WIP)", 0x00
-str_menu_full_ram_test:
-	defm	"[1] Full RAM Test (WIP)", 0x00
-str_menu_slot_check:
-	defm	"[2] Slot Checker (WIP)", 0x00
-str_menu_keyboard_test:
+main_menu_str_monitor:
+	defm	"[0] Monitor", 0x00
+main_menu_str_full_ram_test:
+	defm	"[1] Full RAM Test", 0x00
+main_menu_str_joystick_test:
+	defm	"[2] Joystick Test", 0x00
+main_menu_str_keyboard_test:
 	defm	"[3] Keyboard Tester (WIP)", 0x00
 
-str_menu_license:
+main_menu_str_license:
 	defm	"Licensed under GPL-3.0", 0x00
-str_menu_copyright:
+main_menu_str_copyright:
 	defm	"Copyright(c) 2024 Redlolz", 0x00
 
 
 main_menu:
-	; Clear the screen
-	call	VDPTXTCLRSCREEN
+	ld	a, 0x00
+	ld	hl, 0x0000
+	ld	bc, 0x4000
+	call	VDPFILLVRAM
+
+	call	VDPSETMODETXT
+
+	ld	hl, 0x0108
+	ld	ix, font
+	ld	bc, font_end - font
+	call	VDPCPYTOVRAM
 
 	; Write some strings to the screen
 	ld	de, 0x0c00
 	call	VDPSETPOS
-	ld	hl, str_menu_title_bar
+	ld	hl, main_menu_str_title_bar
 	call	VDPWRSTR
 
 	ld	de, 0x0102
 	call	VDPSETPOS
-	ld	hl, str_menu_monitor
+	ld	hl, main_menu_str_monitor
 	call	VDPWRSTR
 
 	ld	de, 0x0104
 	call	VDPSETPOS
-	ld	hl, str_menu_full_ram_test
+	ld	hl, main_menu_str_full_ram_test
 	call	VDPWRSTR
 
-	; ld	de, 0x0106
-	; call	VDPSETPOS
-	; ld	hl, str_menu_slot_check
-	; call	VDPWRSTR
+	ld	de, 0x0106
+	call	VDPSETPOS
+	ld	hl, main_menu_str_joystick_test
+	call	VDPWRSTR
 
 	; ld	de, 0x0108
 	; call	VDPSETPOS
-	; ld	hl, str_menu_keyboard_test
+	; ld	hl, main_menu_str_keyboard_test
 	; call	VDPWRSTR
 
 	ld	de, 0x0115
 	call	VDPSETPOS
-	ld	hl, str_menu_license
+	ld	hl, main_menu_str_license
 	call	VDPWRSTR
 
 	ld	de, 0x0116
 	call	VDPSETPOS
-	ld	hl, str_menu_copyright
+	ld	hl, main_menu_str_copyright
 	call	VDPWRSTR
 
 main_menu_keyloop:
 	call	PPISCANKEY
 
 	cp	'0'
-	jp	z, monitor
+	jp	z, main_menu_monitor
 
 	cp	'1'
-	jp	z, full_ram_test
+	jp	z, main_menu_full_ram_test
+
+	cp	'2'
+	jp	z, main_menu_joystick_test
 	
 	jp	main_menu_keyloop
 	
 
-full_ram_test:
+main_menu_monitor:
+	include "monitor.z80"
+	jp	main_menu
+
+main_menu_full_ram_test:
 	include	"ram_test.z80"
 	jp	main_menu
 
-monitor:
-	include "monitor.z80"
+main_menu_joystick_test:
+	include	"joystick_test.z80"
 	jp	main_menu
