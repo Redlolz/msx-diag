@@ -2,5 +2,7 @@
 *.rom
 *.sym
 *.bin
+*.spr
+*.fnt
 *.ase
 docs/

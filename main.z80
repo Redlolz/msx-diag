@@ -13,7 +13,7 @@ SSLT:	EQU	0xffff
 
 	; Load binaries
 font:		
-	incbin	"font.bin"
+	incbin	"spleen.fnt"
 font_end:
 	db	0x00
 

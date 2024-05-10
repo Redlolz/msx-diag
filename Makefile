@@ -10,17 +10,18 @@ DEPS=main.z80 \
 	monitor.z80 \
 	ram_test.z80 \
 	joystick_test.z80 \
-	joystick_sprites.bin \
-	font.bin
+	joystick.spr \
+	keyboard.spr \
+	spleen.fnt
 
 msxdiag.rom: $(DEPS)
 	$(AS) -u -i $< -o $@
 	tools/lst2sym.sh main.lst > $@.sym
 
-font.bin: font.png
+%.fnt: %.png
 	python tools/font2bin.py $< $@
 
-joystick_sprites.bin: joystick_sprites.png
+%.spr: %.png
 	python tools/tileset2bin.py $< $@
 
 .PHONY: run flash clean

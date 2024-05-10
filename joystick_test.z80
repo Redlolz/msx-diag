@@ -15,7 +15,7 @@ joy2_trig_a:	EQU	0xf00a
 joy2_trig_b:	EQU	0xf00b
 
 jst_patterns:
-	incbin	"joystick_sprites.bin"
+	incbin	"joystick.spr"
 jst_patterns_end:
 	db	0x00
 
