@@ -10,6 +10,7 @@ DEPS=main.z80 \
 	monitor.z80 \
 	ram_test.z80 \
 	joystick_test.z80 \
+	keyboard_test.z80 \
 	joystick.spr \
 	keyboard.spr \
 	spleen.fnt

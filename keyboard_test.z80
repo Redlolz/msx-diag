@@ -1,0 +1,190 @@
+	jp	kbt_init
+
+kbt_patterns:
+	incbin "keyboard.spr"
+kbt_patterns_end:
+
+kbt_static_columns:
+	dw	0x38ac
+	db	8
+	dw	0x38ad
+	db	7
+	dw	0x38ae
+	db	6
+	dw	0x38af
+	db	5
+	dw	0x38b0
+	db	4
+	dw	0x38b1
+	db	3
+	dw	0x38b2
+	db	2
+	dw	0x38b3
+	db	1
+kbt_static_columns_end:
+	db	0
+
+kbt_static_rows:
+	dw	0x38e9
+	db	1
+	dw	0x38ea
+	db	1
+
+	dw	0x3909
+	db	1
+	dw	0x390a
+	db	2
+	
+	dw	0x3929
+	db	1
+	dw	0x392a
+	db	3
+	
+	dw	0x3949
+	db	1
+	dw	0x394a
+	db	4
+	
+	dw	0x3969
+	db	1
+	dw	0x396a
+	db	5
+	
+	dw	0x3989
+	db	1
+	dw	0x398a
+	db	6
+	
+	dw	0x39a9
+	db	1
+	dw	0x39aa
+	db	7
+	
+	dw	0x39c9
+	db	1
+	dw	0x39ca
+	db	8
+	
+	dw	0x39e9
+	db	1
+	dw	0x39ea
+	db	9
+	
+	dw	0x3a09
+	db	1
+	dw	0x3a0a
+	db	10
+	
+	dw	0x3a29
+	db	2
+	dw	0x3a2a
+	db	1
+kbt_static_rows_end:
+	db	0
+
+kbt_write_from_list:
+	push	ix
+	push	bc
+	push	de
+	push	hl
+kbt_write_from_list_loop:
+	ld	h, (ix+1)
+	ld	l, (ix+0)
+	ld	a, (ix+2)
+	call	VDPWRITEVRAM
+	inc	ix
+	inc	ix
+	inc	ix
+	dec	bc
+	dec	bc
+	dec	bc
+	ld	a, b
+	or	c
+	jp	nz, kbt_write_from_list_loop
+	pop	hl
+	pop	de
+	pop	bc
+	pop	ix
+	ret
+
+kbt_init:
+	ld	a, 0x00
+	ld	hl, 0x0000
+	ld	bc, 0x4000
+	call	VDPFILLVRAM
+
+	call	VDPSETMODEGRPH2
+
+	; Copy patterns to section 0
+	ld	ix, kbt_patterns
+	ld	bc, kbt_patterns_end - kbt_patterns
+	ld	hl, 0x0000
+	call	VDPCPYTOVRAM
+
+	; Copy patterns to section 1
+	ld	ix, kbt_patterns
+	ld	bc, kbt_patterns_end - kbt_patterns
+	ld	hl, 0x0800
+	call	VDPCPYTOVRAM
+
+	; Copy patterns to section 2
+	ld	ix, kbt_patterns
+	ld	bc, kbt_patterns_end - kbt_patterns
+	ld	hl, 0x1000
+	call	VDPCPYTOVRAM
+
+	; Fill with color
+	ld	a, VDP_COL_WHITE << 4 | VDP_COL_BLACK
+	ld	hl, 0x2000
+	ld	bc, 0x1800
+	call	VDPFILLVRAM
+
+	; Write static tiles to the screen
+	ld	ix, kbt_static_columns
+	ld	bc, kbt_static_columns_end - kbt_static_columns
+	call	kbt_write_from_list
+
+	ld	ix, kbt_static_rows
+	ld	bc, kbt_static_rows_end - kbt_static_rows
+	call	kbt_write_from_list
+
+	ld	hl, 0x38ec
+	ld	b, 0x00
+kbt_loop_column:
+	ld	a, b
+	cp	11
+	jp	nz, kbt_loop_column_inc_column
+	ld	b, 0x00
+	ld	hl, 0x38ec
+kbt_loop_column_inc_column:
+	in	a, (PPI_KEYCOL_CAS)
+	and	%11110000
+	or	b
+	out	(PPI_KEYCOL_CAS), a
+	inc	b
+
+	ld	c, 0x8
+	in	a, (PPI_KEYROW)
+	ld	d, a
+kbt_loop_row:
+	bit	7, d
+	jp	nz, kbt_loop_row_active
+	ld	a, 12
+	jp	kbt_loop_row_end
+kbt_loop_row_active:
+	ld	a, 11
+kbt_loop_row_end:
+	call	VDPWRITEVRAM
+	rl	d
+	inc	hl
+	dec	c
+	jp	nz, kbt_loop_row
+	push	de
+	ld	d, 0x00
+	ld	e, 0x18
+	add	hl, de
+	pop	de
+	jp	kbt_loop_column
+
+forever:
+	jp	forever

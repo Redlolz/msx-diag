@@ -51,10 +51,10 @@ main_menu:
 	ld	hl, main_menu_str_joystick_test
 	call	VDPWRSTR
 
-	; ld	de, 0x0108
-	; call	VDPSETPOS
-	; ld	hl, main_menu_str_keyboard_test
-	; call	VDPWRSTR
+	ld	de, 0x0108
+	call	VDPSETPOS
+	ld	hl, main_menu_str_keyboard_test
+	call	VDPWRSTR
 
 	ld	de, 0x0115
 	call	VDPSETPOS
@@ -77,6 +77,9 @@ main_menu_keyloop:
 
 	cp	'2'
 	jp	z, main_menu_joystick_test
+
+	cp	'3'
+	jp	z, main_menu_keyboard_test
 	
 	jp	main_menu_keyloop
 	
@@ -91,4 +94,8 @@ main_menu_full_ram_test:
 
 main_menu_joystick_test:
 	include	"joystick_test.z80"
+	jp	main_menu
+
+main_menu_keyboard_test:
+	include "keyboard_test.z80"
 	jp	main_menu
